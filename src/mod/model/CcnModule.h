@@ -20,13 +20,15 @@ class Receiver;
 		static int dataCount;
 		int data;
 
-		CcnModule();
+		CcnModule(int length);
 
 		~CcnModule();
 
 		bool visited;
 
 		int node;
+
+		int length;
 
 		ns3::Ptr<Text> text;
 
@@ -46,12 +48,16 @@ class Receiver;
 
 		void sendInterest(ns3::Ptr<CCN_Name> name, ns3::Ptr<Receiver> ba);
 
+		char** bf;
+
 		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen);
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);
 
 		void setNode(ns3::Ptr<ns3::Node>);
+
+		void takeCareOfHashes();
 
 		void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
 

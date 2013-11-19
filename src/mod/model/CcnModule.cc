@@ -3,6 +3,8 @@
 #include "ns3/CcnModule.h"
 #include "ns3/Sender.h"
 #include "ns3/Receiver.h"
+#include <openssl/sha.h>
+#include <openssl/md5.h>
 
 class Sender;
 class Receiver;
@@ -12,9 +14,11 @@ using namespace ns3;
 int CcnModule::interestCount=0;
 int CcnModule::dataCount=0;
 
-		CcnModule::CcnModule()
+		CcnModule::CcnModule(int length)
 		{
 			p_i_t=CreateObject<PIT>();
+
+			this->length=length;
 
 			data=0;
 
@@ -25,7 +29,6 @@ int CcnModule::dataCount=0;
 			FIB=CreateObject<Trie>(this);
 
 			DATA=new std::vector < Ptr<CCN_Name> > ();
-
 		}
 
 		void CcnModule::reInit()
@@ -54,6 +57,13 @@ int CcnModule::dataCount=0;
 			p_i_t=0;
 			FIB=0;
 			delete DATA;
+
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				delete [] this->bf[i];
+			}
+
+			delete [] this->bf;
 		}
 
 		void CcnModule::setNode(Ptr<Node> n)
@@ -336,6 +346,41 @@ int CcnModule::dataCount=0;
 
 		}
 
+		void CcnModule::takeCareOfHashes()
+		{
+			this->bf=new char* [this->n->GetNDevices()];
+
+			/*for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				this->bf[i]=new char [this->length/8];
+			}*/
+
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				//k=4
+				//--------------------------------------------------------------------------
+				unsigned char result1[this->length/8];
+				unsigned char buffer1[this->n->GetDevice(i)->GetAddress().GetLength()];
+				this->n->GetDevice(i)->GetAddress().CopyTo(buffer1);
+				SHA1(buffer1,this->n->GetDevice(i)->GetAddress().GetLength(),result1);
+
+				unsigned char result2[this->length/8];
+				unsigned char buffer2[this->n->GetDevice(i)->GetAddress().GetLength()];
+				this->n->GetDevice(i)->GetAddress().CopyTo(buffer2);
+				MD5(buffer2,this->n->GetDevice(i)->GetAddress().GetLength(),result2);
+
+				int result1Integer =reinterpret_cast<int>(&result1);
+				int result2Integer =reinterpret_cast<int>(&result2);
+
+				int iTimesH2=16*result2Integer;
+
+				int fr=(result1Integer+iTimesH2)%(this->length/8);
+				//std::cout<<"hash: "<<fr<<std::endl;
+				this->bf[i]=reinterpret_cast<char*>(&fr);
+
+			    //--------------------------------------------------------------------------
+			}
+		}
 
 
 

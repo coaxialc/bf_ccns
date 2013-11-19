@@ -4,12 +4,13 @@
 
 using namespace ns3;
 
-BootstrappingHelper::BootstrappingHelper(unsigned int s,std::string filename,int gsize)
+BootstrappingHelper::BootstrappingHelper(unsigned int s,std::string filename,int gsize,int length)
 {
 	this->filename=filename;
 	vec3=new std::vector< Ptr < Object > >();
 
 	RngSeedManager::SetSeed (s);
+	this->length=length;
 	this->gs=gsize;
 	//std::cout<<"group size"<<gs<<std::endl;
 	r=CreateObject<UniformRandomVariable>();
@@ -35,13 +36,14 @@ void BootstrappingHelper::parseTopology()
 
 	for(unsigned i=0;i<p->kombos->size();i++)
 	{
-		module->push_back(CreateObject<CcnModule>());
+		module->push_back(CreateObject<CcnModule>(this->length));
 	}
 
 	for(unsigned i=0;i<p->kombos->size();i++)
 	{
 		module->at(i)->setNode((p->kombos->at(i)));
 		module->at(i)->node=i;
+		module->at(i)->takeCareOfHashes();
 	}
 
 	for(unsigned i=0;i<p->kombos->size();i++)
@@ -102,7 +104,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=50;
+		int numOfReq=1;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;

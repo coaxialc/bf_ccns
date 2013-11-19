@@ -42,13 +42,14 @@ class BootstrappingHelper : public Object
 	unsigned gs;
 	void specificData();
 	std::string filename;
+	int length;
 
 	typedef boost::property_map<graph, boost::vertex_index_t>::type im;
 	im in;
 
 
 
-	BootstrappingHelper(unsigned int s,std::string filename,int gsize);
+	BootstrappingHelper(unsigned int s,std::string filename,int gsize,int length);
 	~BootstrappingHelper();
 	void parseTopology();
 
