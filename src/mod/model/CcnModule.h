@@ -6,11 +6,14 @@
 #include "ns3/Sender.h"
 #include "ns3/Receiver.h"
 #include "ns3/Trie.h"
+#include "ns3/Bloomfilter.h"
+#include "ns3/md5.h"
+#include "ns3/sha1.h"
 
 class Trie;
 class Sender;
 class Receiver;
-
+class Bloomfilter;
 
 	class CcnModule  : public ns3::Object
 	{
@@ -48,7 +51,8 @@ class Receiver;
 
 		void sendInterest(ns3::Ptr<CCN_Name> name, ns3::Ptr<Receiver> ba);
 
-		char** bf;
+		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
+		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
 
 		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen);
 

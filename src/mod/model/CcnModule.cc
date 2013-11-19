@@ -3,8 +3,6 @@
 #include "ns3/CcnModule.h"
 #include "ns3/Sender.h"
 #include "ns3/Receiver.h"
-#include <openssl/sha.h>
-#include <openssl/md5.h>
 
 class Sender;
 class Receiver;
@@ -29,6 +27,9 @@ int CcnModule::dataCount=0;
 			FIB=CreateObject<Trie>(this);
 
 			DATA=new std::vector < Ptr<CCN_Name> > ();
+
+			ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
+			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();
 		}
 
 		void CcnModule::reInit()
@@ -50,6 +51,11 @@ int CcnModule::dataCount=0;
             }
 
 			DATA=new std::vector < Ptr<CCN_Name> > ();
+
+			delete ltd;
+			delete dtl;
+			ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
+			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();
 		}
 
 		CcnModule::~CcnModule()
@@ -57,13 +63,8 @@ int CcnModule::dataCount=0;
 			p_i_t=0;
 			FIB=0;
 			delete DATA;
-
-			for(unsigned i=0;i<this->n->GetNDevices();i++)
-			{
-				delete [] this->bf[i];
-			}
-
-			delete [] this->bf;
+			delete ltd;
+			delete dtl;
 		}
 
 		void CcnModule::setNode(Ptr<Node> n)
@@ -348,39 +349,61 @@ int CcnModule::dataCount=0;
 
 		void CcnModule::takeCareOfHashes()
 		{
-			this->bf=new char* [this->n->GetNDevices()];
-
-			/*for(unsigned i=0;i<this->n->GetNDevices();i++)
-			{
-				this->bf[i]=new char [this->length/8];
-			}*/
-
 			for(unsigned i=0;i<this->n->GetNDevices();i++)
 			{
-				//k=4
-				//--------------------------------------------------------------------------
-				unsigned char result1[this->length/8];
-				unsigned char buffer1[this->n->GetDevice(i)->GetAddress().GetLength()];
-				this->n->GetDevice(i)->GetAddress().CopyTo(buffer1);
-				SHA1(buffer1,this->n->GetDevice(i)->GetAddress().GetLength(),result1);
+				std::stringstream s;
+				s<<this->n->GetDevice(i)->GetAddress();
 
-				unsigned char result2[this->length/8];
-				unsigned char buffer2[this->n->GetDevice(i)->GetAddress().GetLength()];
-				this->n->GetDevice(i)->GetAddress().CopyTo(buffer2);
-				MD5(buffer2,this->n->GetDevice(i)->GetAddress().GetLength(),result2);
+				std::cout<<"string produced: "<<s.str()<<std::endl;
 
-				int result1Integer =reinterpret_cast<int>(&result1);
-				int result2Integer =reinterpret_cast<int>(&result2);
+				std::string result1=md5(s.str());
+				std::cout<<"md5 produced: "<<result1<<std::endl;
 
-				int iTimesH2=16*result2Integer;
+				std::string result2=sha1(s.str());
+				std::cout<<"sha1 produced: "<<result2<<std::endl;
 
-				int fr=(result1Integer+iTimesH2)%(this->length/8);
-				//std::cout<<"hash: "<<fr<<std::endl;
-				this->bf[i]=reinterpret_cast<char*>(&fr);
+				long integer_result1,integer_result2=0;
 
-			    //--------------------------------------------------------------------------
+				//kane ta result1 kai result2 arithmous
+
+				bool filter[]=new bool[this->length];
+
+				for(int i=0;i<4;i++)
+				{
+					int index=(integer_result1+i*i*integer_result2)%(this->length);
+					filter[index]=1;
+				}
+				Ptr<Bloomfilter> bf=CreateObject<Bloomfilter>(this->length,filter);
+
+				std::cout<<"filter: "<<bf->getstring()<<std::endl;
+
+				const std::pair < ns3::Ptr< Bloomfilter >, ns3::Ptr< NetDevice > > pa (bf,this->n->GetDevice(i));
+			    this->ltd->insert(pa);
+
+			    const std::pair < ns3::Ptr< NetDevice > , ns3::Ptr < Bloomfilter > > pa2 (this->n->GetDevice(i),bf);
+			    this->dtl->insert(pa2);
 			}
 		}
 
 
+		bool operator<(const ns3::Ptr<NetDevice>& f,const ns3::Ptr<NetDevice>& s)
+		{
+			std::stringstream stream;
+			stream<<f->GetAddress();
 
+			std::stringstream stream2;
+			stream2<<s->GetAddress();
+
+			if(stream.str()<stream2.str())
+			{
+				return true;
+			}
+			else if(stream.str()>stream2.str())
+			{
+				return false;
+			}
+			else
+			{
+				return false;
+			}
+		}
