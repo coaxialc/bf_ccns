@@ -23,9 +23,11 @@ class Bloomfilter;
 		static int dataCount;
 		int data;
 
-		CcnModule(int length);
+		CcnModule(int length,int d);
 
 		~CcnModule();
+
+		int d;
 
 		bool visited;
 

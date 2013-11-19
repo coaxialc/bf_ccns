@@ -1,9 +1,31 @@
 #include "ns3/Bloomfilter.h"
 
-Bloomfilter::Bloomfilter(int length,bool [])
+Bloomfilter::Bloomfilter(int length,bool bits [])
+{
+	this->length=length;
+	filter=bits;
+}
+
+Bloomfilter::Bloomfilter(int length,std::string bits)
 {
 	this->length=length;
 	filter=new bool[length];
+
+	for(int i=0;i<length;i++)
+	{
+		if(bits.at(i)==0)
+		{
+			filter[i]=0;
+		}
+		else if(bits.at(i)==1)
+		{
+			filter[i]=1;
+		}
+		else
+		{
+			std::cout<<"wrong bits"<<std::endl;
+		}
+	}
 }
 
 Bloomfilter::~Bloomfilter()

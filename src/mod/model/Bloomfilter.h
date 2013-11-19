@@ -10,7 +10,8 @@ class Bloomfilter : public ns3::Object
 {
     public:
 	std::string getstring();
-	Bloomfilter(int length,bool []);
+	Bloomfilter(int length,bool bits []);
+	Bloomfilter(int length,std::string bits);
 	~Bloomfilter();
 	bool * filter;
 	int length;

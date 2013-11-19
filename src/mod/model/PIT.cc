@@ -5,7 +5,7 @@ using namespace std;
 
 PIT::PIT()
 {
-	this->p=new std::map < ns3::Ptr<CCN_Name> ,ns3::Ptr < Receivers > >();
+	this->p=new std::map < ns3::Ptr<CCN_Name> ,ns3::Ptr < Bloomfilter > >();
 }
 
 PIT::~PIT()
@@ -13,9 +13,9 @@ PIT::~PIT()
 	delete p;
 }
 
-void PIT::update(ns3::Ptr<CCN_Name> name,ns3::Ptr < Receivers > re)
+void PIT::update(ns3::Ptr<CCN_Name> name,ns3::Ptr < Bloomfilter > re)
 {
-	const std::pair < ns3::Ptr< CCN_Name >, ns3::Ptr< Receivers > > pa (name,re);
+	const std::pair < ns3::Ptr< CCN_Name >, ns3::Ptr< Bloomfilter > > pa (name,re);
 	this->p->insert(pa);
 }
 
@@ -24,7 +24,7 @@ void PIT::erase(ns3::Ptr<CCN_Name> name)
 	this->p->erase(name);
 }
 
-ns3::Ptr<Receivers> PIT::check(ns3::Ptr<CCN_Name> name)
+ns3::Ptr<Bloomfilter> PIT::check(ns3::Ptr<CCN_Name> name)
 {
 	if(p->find(name)!=p->end())
 	{

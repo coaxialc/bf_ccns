@@ -12,11 +12,13 @@ using namespace ns3;
 int CcnModule::interestCount=0;
 int CcnModule::dataCount=0;
 
-		CcnModule::CcnModule(int length)
+		CcnModule::CcnModule(int length,int d)
 		{
 			p_i_t=CreateObject<PIT>();
 
 			this->length=length;
+
+			this->d=d;
 
 			data=0;
 
@@ -116,22 +118,43 @@ int CcnModule::dataCount=0;
 
 		bool CcnModule::receiveabc(Ptr<NetDevice> nd,Ptr<const Packet> p,uint16_t a,const Address& ad)
 		{
-			/*uint8_t* b=new uint8_t[p->GetSize()];
-			p->CopyData(b,p->GetSize());
-			std::string keimeno( b, b+p->GetSize() );
-			std::cout<<"received: "<<keimeno<<std::endl;*/
-
-			/*CCNPacketSizeHeader h5;
-			p->PeekHeader(h5);
-			long size=h5.data;*/
-
 			std::string prename;
-
 
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
 
 			std::string dt(b2, b2+p->GetSize());//an de metrietai to header na bgalo to 4
+
+			//extract bloom filter (variable length)
+			//-----------------------------------
+			std::string filter_string=dt.substr(0,this->length);
+			ns3::Ptr<Bloomfilter> filter=CreateObject<Bloomfilter>(this->length,filter_string);
+			//-----------------------------------
+
+			//extract hop counter (2 characters)
+			//-----------------------------------
+			std::string hopcounter=dt.substr(this->length,2);
+			//-----------------------------------
+
+			if(std::atoi(hopcounter.c_str())==0)
+			{
+				return 0;
+			}
+			else//modify the hopcounter
+			{
+				int new_counter=std::atoi(hopcounter.c_str())-1;
+				if(new_counter>9)//one digit counter
+				{
+					std::string nc=static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
+				}
+				else//two digit counter
+				{
+					std::string nc="0"+static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
+				}
+			}
+
+			dt=dt.substr(this->length+2);
+
 
 			int pos=dt.find("*");
 			prename=dt.substr(4,pos-4);//pairnoume to onoma xoris *
@@ -171,15 +194,10 @@ int CcnModule::dataCount=0;
 				}
 				else
 				{
-				//	std::cout<<"not in pit"<<std::endl<<std::endl;
 					std::vector< Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
 					vec->push_back(nd);
 
 					p_i_t->update(name,new Receivers(vec));
-
-				//	std::cout<<"updating pit"<<std::endl<<std::endl;
-
-				//	std::cout<<"cheking fib"<<std::endl<<std::endl;
 
 					Ptr<Receivers> r=(FIB->prefix(*name))->re;
 
@@ -210,13 +228,11 @@ int CcnModule::dataCount=0;
 						{
 							this->send(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(r->receivers->at(i))))));
 						}
-
 					}
 				}
 			}
 			else if(type=='d')
 			{
-				//std::cout<<"o typos einai d"<<std::endl;
 				data++;
 				dataCount++;
 
@@ -226,7 +242,7 @@ int CcnModule::dataCount=0;
 				}
 				else
 				{
-				//	std::cout<<"data packet came"<<std::endl<<std::endl;
+
 					Ptr<Receivers> rec=p_i_t->check(name);
 
 					for(unsigned i=0;i<rec->receivers->size();i++)
@@ -236,7 +252,6 @@ int CcnModule::dataCount=0;
 						Receiver* bca= dynamic_cast<Receiver*> (o);
 						if(bca!=0)//an einai i efarmogi mas
 						{
-						//	std::cout<<"handing to app"<<std::endl<<std::endl;
 							std::string value=dt.substr(pos+1);
 
 							char* v=const_cast<char*>(value.c_str());
@@ -244,7 +259,6 @@ int CcnModule::dataCount=0;
 						}
 						else//an einai net device
 						{
-					//		std::cout<<"forwarding to device"<<std::endl<<std::endl;
 							this->send(p->Copy(),Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(rec->receivers->at(i))))));
 						}
 					}
