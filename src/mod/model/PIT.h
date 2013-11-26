@@ -8,6 +8,8 @@
 
 using namespace std;
 
+class Bloomfilter;
+
 class PIT : public ns3::Object
 {
     public:

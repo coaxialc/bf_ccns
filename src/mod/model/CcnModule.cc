@@ -79,40 +79,34 @@ int CcnModule::dataCount=0;
 			}
 		}
 
-		void CcnModule::send(Ptr<Packet> p,Ptr<NetDevice> nd)
+		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf)
 		{
-		/*	uint8_t* b=new uint8_t[p->GetSize()];
-			p->CopyData(b,p->GetSize());
-
-			std::string keimeno( b, b+p->GetSize() );
-
-			std::cout<<"sending: "<<keimeno<<std::endl;*/
-		
-			Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
-		//	Ptr<DropTailQueue> dt = pd->GetQueue()->GetObject<DropTailQueue> ();
-
-		//	dt->S
-
-			if((pd->GetQueue()->IsEmpty()))
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
 			{
-
-				if(nd->GetChannel()->GetDevice(0)==nd)
+				if( (dtl->find(this->n->GetDevice(i))->second)+bf == (dtl->find(this->n->GetDevice(i))->second))
 				{
+					Ptr<NetDevice> nd=this->n->GetDevice(i);
+					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
 
-					nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
-				}
-				else
-				{
+					if((pd->GetQueue()->IsEmpty()))
+					{
+						if(nd->GetChannel()->GetDevice(0)==nd)
+						{
 
-					nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+							nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
+						}
+						else
+						{
+							nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+						}
+					}
+					else
+					{
+						//ns3::Time t=ns3::MilliSeconds(10);
+						ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::send,this,p,bf);
+					}
 				}
 			}
-			else
-			{
-				//ns3::Time t=ns3::MilliSeconds(10);
-				ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::send,this,p,nd);
-			}
-
 		}
 
 
@@ -134,30 +128,31 @@ int CcnModule::dataCount=0;
 			//extract hop counter (2 characters)
 			//-----------------------------------
 			std::string hopcounter=dt.substr(this->length,2);
+			int hopc=std::atoi(hopcounter.c_str());
 			//-----------------------------------
 
-			if(std::atoi(hopcounter.c_str())==0)
+			/*if(std::atoi(hopcounter.c_str())==0)
 			{
-				return 0;
+				//return 0;
 			}
 			else//modify the hopcounter
 			{
 				int new_counter=std::atoi(hopcounter.c_str())-1;
-				if(new_counter>9)//one digit counter
+				if(new_counter>9)
 				{
 					std::string nc=static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
 				}
-				else//two digit counter
+				else
 				{
 					std::string nc="0"+static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
 				}
-			}
+			}*/
 
 			dt=dt.substr(this->length+2);
 
 
 			int pos=dt.find("*");
-			prename=dt.substr(4,pos-4);//pairnoume to onoma xoris *
+			prename=dt.substr(0,pos);//pairnoume to onoma xoris *
 		//	std::cout<<"------------prename: "<<prename<<std::endl;
 			char type=prename.at(0);
 
@@ -177,58 +172,25 @@ int CcnModule::dataCount=0;
 			//	std::cout<<"mpike pio mesa to interest me name: "<<name->getValue()<<std::endl;
 				interestCount++;
 
-				Ptr<Receivers> rec=p_i_t->check(name);
-
-				if(rec!=0)
+				Ptr<Bloomfilter> rec;
+				if(hopc==0)
 				{
-				//	std::cout<<"already in pit"<<std::endl<<std::endl;
-					std::vector < ns3::Ptr<Object > > * receivers=new std::vector < ns3::Ptr < Object > > ();
-					receivers->reserve(rec->receivers->size()+1);
-					receivers->insert(receivers->end(),rec->receivers->begin(),rec->receivers->end());
-					receivers->insert(receivers->end(),nd);
-
-					Ptr<Receivers> nr=new Receivers(receivers);
-
-					p_i_t->erase(name);
-					p_i_t->update(name,nr);
+					/*rec=p_i_t->check(name);
+					if(rec==0)//den einai sto PIT ,grapse to kai proothise i an de ksereis na proothiseis koita mipos einai gia sena
+					{
+						if(s!=0)
+						{
+							s->InterestReceived(name);
+						}
+					}
+					else
+					{
+						//enimerose aplos to PIT
+					}*/
 				}
 				else
 				{
-					std::vector< Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
-					vec->push_back(nd);
-
-					p_i_t->update(name,new Receivers(vec));
-
-					Ptr<Receivers> r=(FIB->prefix(*name))->re;
-
-					std::string value=name->getValue();
-					int length=value.length();
-
-					char * d2=new char[length];
-					std::copy(value.begin(),value.end(),d2);
-
-					std::string temp(d2,length);
-					temp="i"+temp;
-
-					Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1);
-
-					CCNPacketSizeHeader h4;
-					h4.data=length+1;
-					pa->AddHeader(h4);
-
-					for(unsigned i=0;i<r->receivers->size();i++)
-					{
-						Object* o=&(*(r->receivers->at(i)));
-						Sender* bca= dynamic_cast<Sender*> (o);
-						if(bca!=0)//an einai i efarmogi mas
-						{
-							bca->InterestReceived(name);
-						}
-						else//an einai net device
-						{
-							this->send(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(r->receivers->at(i))))));
-						}
-					}
+					this->sendInterest(name,hopc-1,filter);
 				}
 			}
 			else if(type=='d')
@@ -236,122 +198,105 @@ int CcnModule::dataCount=0;
 				data++;
 				dataCount++;
 
-				if(p_i_t->check(name)==0)
+				if(hopc==0)
 				{
-					//std::cout<<"Data came but no one is interested."<<std::endl<<std::endl;
-				}
-				else
-				{
-
-					Ptr<Receivers> rec=p_i_t->check(name);
-
-					for(unsigned i=0;i<rec->receivers->size();i++)
+					if(p_i_t->check(name)==0)
 					{
-						Object* o=&(*(rec->receivers->at(i)));
-
-						Receiver* bca= dynamic_cast<Receiver*> (o);
-						if(bca!=0)//an einai i efarmogi mas
-						{
-							std::string value=dt.substr(pos+1);
-
-							char* v=const_cast<char*>(value.c_str());
-							bca->DataArrived(name,v,value.length());
-						}
-						else//an einai net device
-						{
-							this->send(p->Copy(),Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(rec->receivers->at(i))))));
-						}
+						//den exeis na to proothiseis
 					}
+					else
+					{
+						//proothise to opoy prepei
+						std::string value=dt.substr(pos+1);
+						char* v=const_cast<char*>(value.c_str());
+						this->sendData(name,v,value.length(), ,p_i_t->check(name)->second);//o counter tha eksartithei apo to pos to kanoume ,an eei gia counter olo to mikos mexri ekei poy prepei na paei diladi
+					}
+
+					if(this->r!=0)//mipos einai gia esena?
+					{
+						std::string value=dt.substr(pos+1);
+
+						char* v=const_cast<char*>(value.c_str());
+						r->DataArrived(name,v,value.length());
+					}
+				}
+				else//synexise doyleia me filters
+				{
+					std::string value=dt.substr(pos+1);
+					char* v=const_cast<char*>(value.c_str());
+					this->sendData(name,v,value.length(),hopc-1,filter);
 				}
 		    }
 
 			return true;
 		}
 
-		void CcnModule::sendInterest(Ptr<CCN_Name> name, ns3::Ptr<Receiver> ba)
+		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf)
 		{
-		//	std::cout<<"sending "<<<<std::endl<<std::endl;
-		/*	std::cout<<"node "<<this->node<<"--------------------------------"<<std::endl<<std::endl;
-			std::cout<<"sending interest"<<std::endl<<std::endl;*/
+			Ptr<Bloomfilter> rec2;
+			if(bf==0)
+			{
+				rec2=(FIB->prefix(*name))->re;
+			}
+			else
+			{
+				rec2=bf;
+			}
+
 			std::string value=name->getValue();
 			int length=value.length();
 
 			char * d2=new char[length];
 			std::copy(value.begin(),value.end(),d2);
 
-			std::string temp(d2,length);
-			temp="i"+temp;
-
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1);
-
-			CCNPacketSizeHeader h3;
-			h3.data=length+1;
-			pa->AddHeader(h3);
-
-			Ptr<Receivers> rec=p_i_t->check(name);
-
-			if(rec!=0)
+			std::string hopc;
+			if(this->d>9)
 			{
-				std::vector < ns3::Ptr<Object > > * receivers=new std::vector < ns3::Ptr < Object > > ();
-				receivers->reserve(rec->receivers->size()+1);
-				receivers->insert(receivers->end(),rec->receivers->begin(),rec->receivers->end());
-				receivers->insert(receivers->end(),ba);
-
-				Ptr<Receivers> nr=new Receivers(receivers);
-
-				p_i_t->erase(name);
-				p_i_t->update(name,nr);
+				hopc=static_cast<ostringstream*>( &(ostringstream() << hcounter) )->str();
 			}
 			else
 			{
-				std::vector< Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
-				vec->push_back(ba);
-				p_i_t->update(name,new Receivers(vec));
+				hopc="0"+static_cast<ostringstream*>( &(ostringstream() << hcounter) )->str();
 			}
 
-			//kseroume oti paei gia devices giati mas kalese i efarmogi mas
+			std::string temp(d2,length);
+			temp=rec2->getstring()+hopc+"i"+temp;
 
-		/*	uint8_t* b=new uint8_t[pa->GetSize()];
-		    pa->CopyData(b,pa->GetSize());
-			std::string keimeno( b, b+pa->GetSize() );
-			std::cout<<"sending interest: "<<keimeno<<std::endl;*/
+			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1+this->length+hopc.length());
 
-			Ptr<Receivers> rec2=(FIB->prefix(*name))->re;
-
-			//std::cout<<"receivers: "<<rec2->receivers->size()<<std::endl;
-
-			for(unsigned i=0;i<rec2->receivers->size();i++)//for(unsigned i=0;i<1;i++)
-			{
-				this->send(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(rec2->receivers->at(i))))));
-			}
+			this->send(pa,rec2);
 		}
 
-		//to payload einai onoma kai dedomena ,xorizontai apo *
-		void CcnModule::sendData(ns3::Ptr<CCN_Name> name, char* buff, int bufflen)
+		void CcnModule::sendData(ns3::Ptr<CCN_Name> name, char* buff, int bufflen,int hcounter,ns3::Ptr < Bloomfilter > bf)
 		{
-			Ptr<Receivers> rec=p_i_t->check(name);
+			Ptr<Bloomfilter> rec;
+			if(bf==0)
+			{
+				Ptr<Bloomfilter> rec=p_i_t->check(name);
+			}
+			else
+			{
+				rec=bf;
+			}
 
 			int length=name->getValue().length();
 
-			std::string temp(buff,bufflen);
-			std::string temp2="d"+name->getValue()+temp;
-
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp2[0]),bufflen+length+1);
-
-			CCNPacketSizeHeader h2;
-			h2.data=bufflen+length+1;
-			pa->AddHeader(h2);
-
-			/*uint8_t* b=new uint8_t[pa->GetSize()];
-			pa->CopyData(b,pa->GetSize());
-
-			std::string keimeno( b, b+pa->GetSize() );
-			std::cout<<"sending data: "<<keimeno<<std::endl;*/
-
-			for(unsigned i=0;i<rec->receivers->size();i++)
+			std::string hopc;
+			if(this->d>9)
 			{
-				this->send(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(rec->receivers->at(i))))));
+				hopc=static_cast<ostringstream*>( &(ostringstream() << hcounter) )->str();
 			}
+			else
+			{
+				hopc="0"+static_cast<ostringstream*>( &(ostringstream() << hcounter) )->str();
+			}
+
+			std::string temp(buff,bufflen);
+			std::string temp2=rec->getstring()+hopc+"d"+name->getValue()+temp;
+
+			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp2[0]),bufflen+length+1+this->length+hopc.length());
+
+			this->send(pa,rec);
 
 			p_i_t->erase(name);
 		}
@@ -376,15 +321,15 @@ int CcnModule::dataCount=0;
 				std::string result2=sha1(s.str());
 				std::cout<<"sha1 produced: "<<result2<<std::endl;
 
-				long integer_result1,integer_result2=0;
 
-				//kane ta result1 kai result2 arithmous
+				unsigned long integer_result1=(bitset<128>(stringtobinarystring(result1))).to_ulong();
+				unsigned long integer_result2=(bitset<160>(stringtobinarystring(result2))).to_ulong();
 
-				bool filter[]=new bool[this->length];
+				bool* filter=new bool[this->length];
 
-				for(int i=0;i<4;i++)
+				for(int j=0;j<4;j++)
 				{
-					int index=(integer_result1+i*i*integer_result2)%(this->length);
+					int index=(integer_result1+j*j*integer_result2)%(this->length);
 					filter[index]=1;
 				}
 				Ptr<Bloomfilter> bf=CreateObject<Bloomfilter>(this->length,filter);
@@ -420,4 +365,16 @@ int CcnModule::dataCount=0;
 			{
 				return false;
 			}
+		}
+
+		std::string stringtobinarystring(std::string s)
+		{
+			std::string result="";
+
+			for (std::size_t i = 0; i < s.size(); ++i)
+			{
+				result=result+(std::bitset<8>(s.c_str()[i])).to_string();
+			}
+
+			return result;
 		}

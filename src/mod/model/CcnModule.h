@@ -7,13 +7,16 @@
 #include "ns3/Receiver.h"
 #include "ns3/Trie.h"
 #include "ns3/Bloomfilter.h"
+#include "ns3/PIT.h"
 #include "ns3/md5.h"
 #include "ns3/sha1.h"
+#include <bitset>
 
 class Trie;
 class Sender;
 class Receiver;
 class Bloomfilter;
+class PIT;
 
 	class CcnModule  : public ns3::Object
 	{
@@ -45,18 +48,27 @@ class Bloomfilter;
 
 		void reInit();
 
+		std::string stringtobinarystring(std::string s);
+
+		//std::bitset<128> stringtobitset1(std::string s);
+
+		//std::bitset<160> stringtobitset2(std::string s);
+
 		ns3::Ptr<PIT> p_i_t;
 
 		ns3::Ptr<ns3::Node> n;
 
+		ns3::Ptr<Sender> s;
+		ns3::Ptr<Receiver> r;
+
 		std::map < int, ns3::Ptr < CcnModule > > map;
 
-		void sendInterest(ns3::Ptr<CCN_Name> name, ns3::Ptr<Receiver> ba);
+		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf);
 
 		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
 
-		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen);
+		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen,int h,ns3::Ptr < Bloomfilter > bf);
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);
@@ -65,7 +77,7 @@ class Bloomfilter;
 
 		void takeCareOfHashes();
 
-		void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
+		void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<Bloomfilter> bf);
 
 		bool receiveabc(ns3::Ptr<ns3::NetDevice> nd,ns3::Ptr<const ns3::Packet> p,uint16_t a,const ns3::Address& ad);
 	};
