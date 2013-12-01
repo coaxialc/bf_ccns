@@ -79,28 +79,3 @@ bool operator<(const ns3::Ptr<Bloomfilter>& f,const ns3::Ptr<Bloomfilter>& s)
 		return false;
 	}
 }
-
-Ptr<Bloomfilter> operator+(const ns3::Ptr<Bloomfilter>& f,const ns3::Ptr<Bloomfilter>& s)
-{
-	if(f->length!=s->length)
-	{
-		return 0;
-	}
-
-	bool* result=new bool [f->length];
-
-	for(int i=0;i<f->length;i++)
-	{
-		if(f->filter[i]==1&&s->filter[i]==1)
-		{
-			result[i]=1;
-		}
-		else
-		{
-			result[i]=0;
-		}
-	}
-
-	return Ptr<Bloomfilter>(new Bloomfilter(f->length,result));
-}
-

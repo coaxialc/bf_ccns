@@ -26,13 +26,15 @@ class PIT;
 		static int dataCount;
 		int data;
 
-		CcnModule(int length,int d);
+		CcnModule(int length,int d,int switchh);
 
 		~CcnModule();
 
 		int d;
 
 		bool visited;
+
+		int switchh;
 
 		int node;
 
@@ -63,12 +65,18 @@ class PIT;
 
 		std::map < int, ns3::Ptr < CcnModule > > map;
 
+		ns3::Ptr<Bloomfilter> add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+
+		bool equals(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+
+		void sendThroughDevice(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
+
 		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf);
 
 		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
 
-		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen,int h,ns3::Ptr < Bloomfilter > bf);
+		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl);
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);

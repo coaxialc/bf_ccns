@@ -18,6 +18,7 @@
 		void Receiver::DataArrived(ns3::Ptr<CCN_Name> data, char* buff, int bufflen)
 		{
 		//	std::cout<<"Data arrived , "<<data->getValue()<<std::endl;
+
 		}
 
 
@@ -32,7 +33,7 @@
 				static std::string* name3=&temporary;
 				Ptr<CCN_Name> name4=Text::getPtr()->giveText(name3);
 
-				this->ccnm->sendInterest(name4,ccnm->length,0);
+				this->ccnm->sendInterest(name4,-1,0);
 			}
 		}
 

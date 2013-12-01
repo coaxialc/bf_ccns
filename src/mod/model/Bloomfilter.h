@@ -13,6 +13,7 @@ class Bloomfilter : public ns3::Object
 	Bloomfilter(int length,bool bits []);
 	Bloomfilter(int length,std::string bits);
 	~Bloomfilter();
+
 	bool * filter;
 	int length;
 };

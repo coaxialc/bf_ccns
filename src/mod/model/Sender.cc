@@ -37,7 +37,7 @@
 
 		void Sender::SendData(ns3::Ptr<CCN_Name> data, char* buff, int bufflen)
 		{
-			this->ccnm->sendData( data, buff, bufflen,ccnm->length,0);
+			this->ccnm->sendData( data, buff, bufflen,0,0);
 		}
 
 		ns3::TypeId Sender::GetTypeId(void)
