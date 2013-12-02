@@ -97,11 +97,11 @@ int CcnModule::dataCount=0;
 			}
 		}
 
-		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf)
+		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf,Ptr<NetDevice> excluded)
 		{
 			for(unsigned i=0;i<this->n->GetNDevices();i++)
 			{
-				if(equals(add(dtl->find(this->n->GetDevice(i))->second,bf),(dtl->find(this->n->GetDevice(i))->second)))
+				if(this->n->GetDevice(i)!=excluded&&equals(add(dtl->find(this->n->GetDevice(i))->second,bf),(dtl->find(this->n->GetDevice(i))->second)))
 				{
 					Ptr<NetDevice> nd=this->n->GetDevice(i);
 					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
@@ -212,7 +212,7 @@ int CcnModule::dataCount=0;
 				}
 				else
 				{
-					this->sendInterest(name,hopc-1,filter);
+					this->sendInterest(name,hopc-1,filter,nd);//a netdevice must be excluded
 				}
 			}
 			else if(type=='d')
@@ -245,14 +245,14 @@ int CcnModule::dataCount=0;
 
 						std::string value=dt.substr(pos+1);
 						char* v=const_cast<char*>(value.c_str());
-						this->sendData(name,v,value.length(),pt->bf,pt->ttl);
+						this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
 					}
 				}
 				else//continue using Bloom filters
 				{
 					std::string value=dt.substr(pos+1);
 					char* v=const_cast<char*>(value.c_str());
-					this->sendData(name,v,value.length(),filter,hopc-1);
+					this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
 				}
 				//--------------------------------------------
 		    }
@@ -260,7 +260,7 @@ int CcnModule::dataCount=0;
 			return true;
 		}
 
-		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf)
+		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf,Ptr<NetDevice> excluded)
 		{
 			//an mas dosane filtro feugei me ti send allios feugei me tin alli exontas filtro ftiagmeno apo emas
 			//alla ksekinontas ti poreia me anafora se Object
@@ -326,13 +326,13 @@ int CcnModule::dataCount=0;
 			{
 				sendThroughDevice(,receivers->receivers->at(i));
 			}
-			else
+			else//ypothetoume oti an ektelstei auto tote tha exei kai exluded
 			{
-				this->send(pa,rec2);
+				this->send(pa,rec2,excluded);
 			}
 		}
 
-		void CcnModule::sendData(ns3::Ptr<CCN_Name> name, char* buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl)
+		void CcnModule::sendData(ns3::Ptr<CCN_Name> name, char* buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,Ptr<NetDevice> excluded)
 		{
 			int time;
 			Ptr<Bloomfilter> rec;
@@ -364,7 +364,7 @@ int CcnModule::dataCount=0;
 
 			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp2[0]),bufflen+length+1+this->length+hopc.length());
 
-			this->send(pa,rec);
+			this->send(pa,rec,excluded);
 
 			p_i_t->erase(name);
 		}
