@@ -28,6 +28,17 @@ Bloomfilter::Bloomfilter(int length,std::string bits)
 	}
 }
 
+Bloomfilter::Bloomfilter(int length)
+{
+	this->length=length;
+	filter=new bool[length];
+
+	for(int i=0;i<length;i++)
+	{
+		filter[i]=0;
+	}
+}
+
 Bloomfilter::~Bloomfilter()
 {
 	delete filter;

@@ -38,7 +38,7 @@ void BootstrappingHelper::parseTopology()
 
 	for(unsigned i=0;i<p->kombos->size();i++)
 	{
-		module->push_back(CreateObject<CcnModule>(this->length,this->d,this->switchh));
+		module->push_back(CreateObject<CcnModule>(this->length,this->d,this->switchh,r));
 	}
 
 	for(unsigned i=0;i<p->kombos->size();i++)

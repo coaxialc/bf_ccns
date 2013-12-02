@@ -12,7 +12,7 @@ using namespace ns3;
 int CcnModule::interestCount=0;
 int CcnModule::dataCount=0;
 
-		CcnModule::CcnModule(int length,int d,int switchh)
+		CcnModule::CcnModule(int length,int d,int switchh,ns3::Ptr<ns3::UniformRandomVariable> rv)
 		{
 			p_i_t=CreateObject<PIT>();
 			this->length=length;//length of the Bloom filters
@@ -25,6 +25,7 @@ int CcnModule::dataCount=0;
 			DATA=new std::vector < Ptr<CCN_Name> > ();
 			ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
 			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();
+			this->rv=rv;
 		}
 
 		void CcnModule::reInit()
@@ -121,7 +122,7 @@ int CcnModule::dataCount=0;
 					else
 					{
 						//ns3::Time t=ns3::MilliSeconds(10);
-						ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::send,this,p,bf);
+						ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::send,this,p,bf,excluded);
 					}
 				}
 			}
@@ -149,36 +150,17 @@ int CcnModule::dataCount=0;
 			int hopc=std::atoi(hopcounter.c_str());
 			//-----------------------------------
 
-			/*if(std::atoi(hopcounter.c_str())==0)
-			{
-				//return 0;
-			}
-			else//modify the hopcounter
-			{
-				int new_counter=std::atoi(hopcounter.c_str())-1;
-				if(new_counter>9)
-				{
-					std::string nc=static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
-				}
-				else
-				{
-					std::string nc="0"+static_cast<ostringstream*>( &(ostringstream() << new_counter) )->str();
-				}
-			}*/
-
 			dt=dt.substr(this->length+2);
-
 
 			int pos=dt.find("*");
 			prename=dt.substr(0,pos);//pairnoume to onoma xoris *
-		//	std::cout<<"------------prename: "<<prename<<std::endl;
+
 			char type=prename.at(0);
 
 			prename=prename.substr(1); //std::cout<<"------------prename: "<<prename<<std::endl;
 
 			std::string name_value=prename;
-			//std::cout<<"------------name_value: "<<name_value<<std::endl;
-		//	static std::string* name2=new std::string(name_value);  std::cout<<"------------name2: "<<*name2<<std::endl;
+
 			static std::string* name2=&name_value; //std::cout<<"------------name2: "<<*name2<<std::endl;
 			Ptr<CCN_Name> name=text->giveText(name2);
 			name->name.erase(name->name.begin());
@@ -187,8 +169,37 @@ int CcnModule::dataCount=0;
 
 			if(type=='i')
 			{
-			//	std::cout<<"mpike pio mesa to interest me name: "<<name->getValue()<<std::endl;
 				interestCount++;
+				/*Ptr<Receivers> receivers=(FIB->prefix(*name))->re;//koita an leei kati to FIB gia auto to interest
+
+				if(receivers==0) return true;//an de ksereis ti na to kaneis agnoise to
+
+				for(unsigned i=0;i<receivers->receivers->size();i++)
+				{
+					Object* o=&(*(receivers->receivers->at(i)));
+					Sender* bca= dynamic_cast<Sender*> (o);
+
+					if(bca!=0)//an einai na dothei se antikeimeno Sender
+					{
+						//ftiakse to PIT
+						//----------------------------------
+
+						//----------------------------------
+
+						bca->InterestReceived(name);//push to app
+					}
+					else
+					{
+						//ftiakse to PIT
+						//----------------------------------
+
+						//----------------------------------
+
+						//proothise
+					}
+				}
+*/
+
 
 				Ptr<PTuple> rec;
 				if(hopc==0)
@@ -198,27 +209,36 @@ int CcnModule::dataCount=0;
 					{
 						p_i_t->update(name,CreateObject<PTuple>(filter,(this->d)-hopc));
 
-						Ptr<Receivers> receivers=(FIB->prefix(*name))->re;
-						for(unsigned i=0;i<receivers->receivers->size();i++)
-						{
-
-							sendThroughDevice(,receivers->receivers->at(i));
-						}
+						sendInterest(name,this->d,0);
 					}
 					else
 					{
-						//enimerose apla to pit
+						Ptr<PTuple> tuple=p_i_t->check(name);
+						p_i_t->erase(name);
+						if(tuple->ttl<(this->d)-hopc)
+						{
+							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),(this->d)-hopc));
+						}
+						else
+						{
+							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),tuple->ttl));
+						}
 					}
 				}
 				else
 				{
-					this->sendInterest(name,hopc-1,filter,nd);//a netdevice must be excluded
+					this->sendInterest(name , hopc-1 , orbf(filter,dtl->find(nd)->second));
 				}
 			}
 			else if(type=='d')
 			{
 				data++;
 				dataCount++;
+
+				if(hopc<0)
+				{
+					return true;
+				}
 
 				//mipos einai gia 'mena?
 				//--------------------------------------------
@@ -236,7 +256,7 @@ int CcnModule::dataCount=0;
 				{
 					if(p_i_t->check(name)==0)
 					{
-
+						//agnoeitai
 					}
 					else
 					{
@@ -260,25 +280,17 @@ int CcnModule::dataCount=0;
 			return true;
 		}
 
-		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf,Ptr<NetDevice> excluded)
+		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf)
 		{
-			//an mas dosane filtro feugei me ti send allios feugei me tin alli exontas filtro ftiagmeno apo emas
-			//alla ksekinontas ti poreia me anafora se Object
 			Ptr<Bloomfilter> rec2;
 			if(bf==0)
 			{
-
+				rec2=CreateObject<Bloomfilter>(this->length);//this constructor return an emtpy Bloom filter
 			}
 			else
 			{
 				rec2=bf;
 			}
-
-
-
-		    (FIB->prefix(*name))->re;
-
-
 
 			std::string value=name->getValue();
 			int length=value.length();
@@ -291,7 +303,9 @@ int CcnModule::dataCount=0;
 			{
 				if(switchh==0)//switchh 0 means using a random value
 				{
-
+					this->rv->SetAttribute ("Min", DoubleValue (0));
+				    this->rv->SetAttribute ("Max", DoubleValue (this->d));
+				    hopc=static_cast<ostringstream*>( &(ostringstream() << (this->rv->GetInteger())) )->str();
 				}
 				else//switchh 1 means using the maximium value ,d
 				{
@@ -322,13 +336,21 @@ int CcnModule::dataCount=0;
 
 			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1+this->length+hopc.length());
 
-			if(bf!=0)
+			Ptr<Receivers> receivers=(FIB->prefix(*name))->re;
+
+			for(unsigned i=0;i<receivers->receivers->size();i++)
 			{
-				sendThroughDevice(,receivers->receivers->at(i));
-			}
-			else//ypothetoume oti an ektelstei auto tote tha exei kai exluded
-			{
-				this->send(pa,rec2,excluded);
+				Object* o=&(*(receivers->receivers->at(i)));
+				Sender* bca= dynamic_cast<Sender*> (o);
+
+				if(bca!=0)//an einai na dothei se antikeimeno Sender
+				{
+					bca->InterestReceived(name);
+				}
+				else
+				{
+					sendThroughDevice(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(receivers->receivers->at(i))))));
+				}
 			}
 		}
 
@@ -435,7 +457,7 @@ int CcnModule::dataCount=0;
 			}
 		}
 
-		std::string stringtobinarystring(std::string s)
+		std::string CcnModule::stringtobinarystring(std::string s)
 		{
 			std::string result="";
 
@@ -446,45 +468,6 @@ int CcnModule::dataCount=0;
 
 			return result;
 		}
-
-		/*ns3::Ptr<Bloomfilter> operator+(const ns3::Ptr<Bloomfilter>& f,const ns3::Ptr<Bloomfilter>& s)
-		{
-		        if(f->length!=s->length)
-		        {
-		                return 0;
-		        }
-
-		        bool* result=new bool [f->length];
-
-		        for(int i=0;i<f->length;i++)
-		        {
-		                if(f->filter[i]==1&&s->filter[i]==1)
-		                {
-		                        result[i]=1;
-		                }
-		                else
-		                {
-		                        result[i]=0;
-		                }
-		        }
-
-		        return Ptr<Bloomfilter>(new Bloomfilter(f->length,result));
-		}*/
-
-		/*bool operator==(const ns3::Ptr<Bloomfilter>& f,const ns3::Ptr<Bloomfilter>& s)
-		{
-			if(f->length!=s->length) return false;
-
-			for(int i=0;i<f->length;i++)
-			{
-				if(f->filter[i]!=s->filter[i])
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}*/
 
 		ns3::Ptr<Bloomfilter> CcnModule::add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
 		{
@@ -523,5 +506,29 @@ int CcnModule::dataCount=0;
 			}
 
 			return true;
+		}
+
+		ns3::Ptr<Bloomfilter> CcnModule::orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
+		{
+			if(f->length!=s->length)
+			{
+			     return 0;
+			}
+
+			bool* result=new bool [f->length];
+
+			for(int i=0;i<f->length;i++)
+			{
+			     if(f->filter[i]==1||s->filter[i]==1)
+			     {
+			         result[i]=1;
+			     }
+			     else
+			     {
+			         result[i]=0;
+			     }
+			}
+
+			return Ptr<Bloomfilter>(new Bloomfilter(f->length,result));
 		}
 

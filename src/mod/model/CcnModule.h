@@ -26,13 +26,15 @@ class PIT;
 		static int dataCount;
 		int data;
 
-		CcnModule(int length,int d,int switchh);
+		CcnModule(int length,int d,int switchh,ns3::Ptr<ns3::UniformRandomVariable> rv);
 
 		~CcnModule();
 
 		int d;
 
 		bool visited;
+
+		ns3::Ptr<ns3::UniformRandomVariable> rv;
 
 		int switchh;
 
@@ -71,7 +73,7 @@ class PIT;
 
 		void sendThroughDevice(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
 
-		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf,ns3::Ptr<ns3::NetDevice> excluded);
+		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf);
 
 		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
@@ -80,6 +82,8 @@ class PIT;
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);
+
+		ns3::Ptr<Bloomfilter> orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
 
 		void setNode(ns3::Ptr<ns3::Node>);
 
