@@ -15,6 +15,7 @@ PIT::~PIT()
 
 void PIT::update(ns3::Ptr<CCN_Name> name,ns3::Ptr < PTuple > re)
 {
+	//std::cout<<"mpainei sto pit to onoma:"<<name->getValue()<<std::endl;
 	const std::pair < ns3::Ptr< CCN_Name >, ns3::Ptr< PTuple > > pa (name,re);
 	this->p->insert(pa);
 }

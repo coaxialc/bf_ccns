@@ -30,6 +30,7 @@ int CcnModule::dataCount=0;
 
 		void CcnModule::reInit()
 		{
+			p_i_t=0;
 			p_i_t=CreateObject<PIT>();
 			data=0;
 			visited=false;
@@ -39,7 +40,7 @@ int CcnModule::dataCount=0;
                 FIB=0;
             }
 
-            FIB=new Trie(this);
+            FIB=CreateObject<Trie>(this);
 
             if (DATA)
             {
@@ -48,10 +49,10 @@ int CcnModule::dataCount=0;
 
 			DATA=new std::vector < Ptr<CCN_Name> > ();
 
-			delete ltd;
+			/*delete ltd;
 			delete dtl;
 			ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
-			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();
+			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();*/
 
 			//zero out apps to avoid having a Receiver or a Sender app next time if you don't need it
 			s=0;
@@ -131,12 +132,15 @@ int CcnModule::dataCount=0;
 
 		bool CcnModule::receiveabc(Ptr<NetDevice> nd,Ptr<const Packet> p,uint16_t a,const Address& ad)
 		{
+			//std::cout<<"Packet received!"<<std::endl;
 			std::string prename;
 
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
 
 			std::string dt(b2, b2+p->GetSize());//an de metrietai to header na bgalo to 4
+
+		//	std::cout<<"Payload: "<<dt<<std::endl;
 
 			//extract bloom filter (variable length)
 			//-----------------------------------
@@ -170,9 +174,36 @@ int CcnModule::dataCount=0;
 			if(type=='i')
 			{
 				interestCount++;
+		//		std::cout<<"Interest received!"<<std::endl;
 				/*Ptr<Receivers> receivers=(FIB->prefix(*name))->re;//koita an leei kati to FIB gia auto to interest
 
 				if(receivers==0) return true;//an de ksereis ti na to kaneis agnoise to
+
+			   //an o hop counter einai katallilos tote ftiakse to PIT
+			   //----------------------------------
+				if(hopc==0)
+				{
+					Ptr<PTuple> rec;
+					rec=p_i_t->check(name);
+					if(rec==0)
+					{
+						p_i_t->update(name,CreateObject<PTuple>(filter,(this->d)-hopc));
+					}
+					else
+					{
+						Ptr<PTuple> tuple=p_i_t->check(name);
+						p_i_t->erase(name);
+						if(tuple->ttl<(this->d)-hopc)
+						{
+							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),(this->d)-hopc));
+						}
+						else
+						{
+							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),tuple->ttl));
+						}
+					}
+				}
+			   //----------------------------------
 
 				for(unsigned i=0;i<receivers->receivers->size();i++)
 				{
@@ -181,20 +212,10 @@ int CcnModule::dataCount=0;
 
 					if(bca!=0)//an einai na dothei se antikeimeno Sender
 					{
-						//ftiakse to PIT
-						//----------------------------------
-
-						//----------------------------------
-
 						bca->InterestReceived(name);//push to app
 					}
 					else
 					{
-						//ftiakse to PIT
-						//----------------------------------
-
-						//----------------------------------
-
 						//proothise
 					}
 				}
@@ -234,6 +255,7 @@ int CcnModule::dataCount=0;
 			{
 				data++;
 				dataCount++;
+			//	std::cout<<"Data received!"<<std::endl;
 
 				if(hopc<0)
 				{
@@ -305,7 +327,16 @@ int CcnModule::dataCount=0;
 				{
 					this->rv->SetAttribute ("Min", DoubleValue (0));
 				    this->rv->SetAttribute ("Max", DoubleValue (this->d));
-				    hopc=static_cast<ostringstream*>( &(ostringstream() << (this->rv->GetInteger())) )->str();
+				    int inthopc=this->rv->GetInteger();
+
+				    if(inthopc>9)
+				    {
+				    	hopc=static_cast<ostringstream*>( &(ostringstream() << inthopc) )->str();
+				    }
+				    else
+				    {
+				    	hopc="0"+static_cast<ostringstream*>( &(ostringstream() << inthopc) )->str();
+				    }
 				}
 				else//switchh 1 means using the maximium value ,d
 				{
@@ -333,7 +364,12 @@ int CcnModule::dataCount=0;
 
 			std::string temp(d2,length);
 			temp=rec2->getstring()+hopc+"i"+temp;
+		/*	if(bf==0)
+			{
+				std::cout<<"should be empty: "<<std::endl;
+			}*/
 
+		//	std::cout<<"Constructing packet with string: "<<temp<<std::endl;
 			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1+this->length+hopc.length());
 
 			Ptr<Receivers> receivers=(FIB->prefix(*name))->re;
@@ -345,7 +381,15 @@ int CcnModule::dataCount=0;
 
 				if(bca!=0)//an einai na dothei se antikeimeno Sender
 				{
-					bca->InterestReceived(name);
+					if(hcounter!=this->d)
+					{
+						bca->InterestReceived2(name,bf,hopc);
+					}
+					else
+					{
+						bca->InterestReceived(name);
+					}
+
 				}
 				else
 				{
@@ -360,14 +404,33 @@ int CcnModule::dataCount=0;
 			Ptr<Bloomfilter> rec;
 			if(bf==0)
 			{
-				Ptr<Bloomfilter> rec=(p_i_t->check(name))->bf;
+			//	std::cout<<"psaxnoume sto pit to: "<<name->getValue()<<std::endl;
+				if(p_i_t->check(name)==0)
+				{
+					std::cout<<"null to tuple"<<std::endl;
+				}
+				else
+				{
+					std::cout<<"oxi null to tuple"<<std::endl;
+				}
+				rec=(p_i_t->check(name))->bf;
 			}
 			else
 			{
 				rec=bf;
 			}
 
-			if(ttl==0)
+			/*if(p_i_t->p->empty())
+			{
+				std::cout<<"empty pit"<<std::endl;
+			}
+
+			if(bf==0)
+						{
+							std::cout<<"empty filter"<<std::endl;
+						}
+*/
+			if(bf==0)
 			{
 				time=(p_i_t->check(name))->ttl;
 			}
@@ -379,7 +442,16 @@ int CcnModule::dataCount=0;
 			int length=name->getValue().length();
 			std::string hopc;
 
-			hopc=static_cast<ostringstream*>( &(ostringstream() << time) )->str();
+			if(time>9)
+			{
+					hopc=static_cast<ostringstream*>( &(ostringstream() << time) )->str();
+			}
+			else
+			{
+					hopc="0"+static_cast<ostringstream*>( &(ostringstream() << time) )->str();
+			}
+
+			//hopc=static_cast<ostringstream*>( &(ostringstream() << time) )->str();
 
 			std::string temp(buff,bufflen);
 			std::string temp2=rec->getstring()+hopc+"d"+name->getValue()+temp;
@@ -403,17 +475,16 @@ int CcnModule::dataCount=0;
 				std::stringstream s;
 				s<<this->n->GetDevice(i)->GetAddress();
 
-				std::cout<<"string produced: "<<s.str()<<std::endl;
+				//std::cout<<"string produced: "<<s.str()<<std::endl;
 
 				std::string result1=md5(s.str());
-				std::cout<<"md5 produced: "<<result1<<std::endl;
+				//std::cout<<"md5 produced: "<<result1<<std::endl;
 
 				std::string result2=sha1(s.str());
-				std::cout<<"sha1 produced: "<<result2<<std::endl;
+				//std::cout<<"sha1 produced: "<<result2<<std::endl;
 
-
-				unsigned long integer_result1=(bitset<128>(stringtobinarystring(result1))).to_ulong();
-				unsigned long integer_result2=(bitset<160>(stringtobinarystring(result2))).to_ulong();
+				uint32_t integer_result1=(bitset<32>(stringtobinarystring(result1).substr(96))).to_ulong();//we only keep the last 32 bits
+				uint32_t integer_result2=(bitset<32>(stringtobinarystring(result2).substr(96))).to_ulong();//we only keep the last 32 bits
 
 				bool* filter=new bool[this->length];
 
@@ -432,6 +503,14 @@ int CcnModule::dataCount=0;
 			    const std::pair < ns3::Ptr< NetDevice > , ns3::Ptr < Bloomfilter > > pa2 (this->n->GetDevice(i),bf);
 			    this->dtl->insert(pa2);
 			}
+
+			/*std::cout<<"diagnostic for the maps-----------------------"<<std::endl;
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				std::cout<<"device "<<i<<" gives "<<dtl->find(this->n->GetDevice(i))->second->getstring()<<std::endl;
+				std::cout<<"Bloom filter "<<i<<" gives device with address"<<ltd->find(dtl->find(this->n->GetDevice(i))->second)->second->GetAddress()<<std::endl;
+			}
+			std::cout<<"diagnostic for the maps-----------------------"<<std::endl;*/
 		}
 
 
@@ -490,7 +569,7 @@ int CcnModule::dataCount=0;
 			     }
 			}
 
-			return Ptr<Bloomfilter>(new Bloomfilter(f->length,result));
+			return CreateObject<Bloomfilter>(f->length,result);
 		}
 
 		bool CcnModule::equals(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
@@ -516,6 +595,10 @@ int CcnModule::dataCount=0;
 			}
 
 			bool* result=new bool [f->length];
+			for(int i=0;i<f->length;i++)
+			{
+				result[i]=0;
+			}
 
 			for(int i=0;i<f->length;i++)
 			{
@@ -529,6 +612,7 @@ int CcnModule::dataCount=0;
 			     }
 			}
 
-			return Ptr<Bloomfilter>(new Bloomfilter(f->length,result));
-		}
+		//	std::cout<<"OR between "<<f->getstring()<<" and "<<std::endl<<s->getstring()<<std::endl<<"gives "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
 
+			return CreateObject<Bloomfilter>(f->length,result);
+		}

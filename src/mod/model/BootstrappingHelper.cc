@@ -106,7 +106,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=1;
+		int numOfReq=20;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;
@@ -238,39 +238,16 @@ void BootstrappingHelper::startExperiment()
 			//----------------------------------------------------
 
 			Simulator::Stop();
-
-			//pitEntries=pitEntries+pitEntryForExp;
 		}
-
-		//double avgEntriesForGs=pitEntries/10;
 	}
 }
 
 std::vector <vertex> BootstrappingHelper::select(std::vector <vertex> v,unsigned gs)
 {
-	//std::set <int>* s=new std::set<int>();
 	std::vector <vertex>* group=new std::vector <vertex>();
-
-	/*while(s->size()<gs)
-	{
-		//s->insert(random->GetInteger()%(v.size()+1));
-		s->insert(rand()%(v.size()));
-	}
-
-	for(std::set<int>::iterator i=s->begin(); i!=s->end(); ++i)
-	{
-		int pos=*i;
-		group->push_back(v.at(pos));
-	}*/
-
-
-	/*this->size=v.size();
-	std::random_shuffle(v.begin(),v.end(),BootstrappingHelper::random);*/
 
 	for(unsigned i=0;i<gs;i++)
 	{
-		//int pos=rand()%(v.size()-i)+i+1;
-
 		r->SetAttribute ("Min", DoubleValue (i+1));
 		r->SetAttribute ("Max", DoubleValue (v.size()-1));
 		int pos=r->GetInteger();
@@ -285,11 +262,6 @@ std::vector <vertex> BootstrappingHelper::select(std::vector <vertex> v,unsigned
 
 	return *group;
 }
-
-/*int BootstrappingHelper::random ()
-{
-	return rand()%(this->size);
-}*/
 
 vertex BootstrappingHelper::selectOwner(std::vector <vertex> v1,std::vector <vertex> group)
 {
@@ -313,26 +285,18 @@ vertex BootstrappingHelper::selectOwner(std::vector <vertex> v1,std::vector <ver
 		}
 	}
 
-	//int pos=random->GetInteger()%(d.size()+1);
-	//int pos=rand()%(d.size());
-	//std::cout<<"size of d: "<<d.size()<<std::endl;
-
 	r->SetAttribute ("Min", DoubleValue (0));
 	r->SetAttribute ("Max", DoubleValue (d.size()-1));
 	int pos=r->GetInteger();
-	//std::cout<<"position: "<<pos<<std::endl;
+
 	return d.at(pos);
 }
 
 void BootstrappingHelper::PITCheck(int gs,int exp)
 {//sto router tis pigis tha mou bgalei allo ena entry
 
-	//pitEntryForExp=0;
-
 	for(unsigned i=0;i<module->size();i++)
 	{
-		//pitEntryForExp=pitEntryForExp+module->at(i)->p_i_t->p->size();
-
 		stringstream st;
 		st << gs;
 

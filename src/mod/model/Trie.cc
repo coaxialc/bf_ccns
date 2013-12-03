@@ -37,7 +37,7 @@ using namespace ns3;
 					receivers->insert(receivers->end(),re->receivers->begin(),re->receivers->end());
 
 					Ptr<Receivers> rec=CreateObject<Receivers>(receivers);
-					std::pair < std::string,ns3::Ptr < TrieNode > > pa (*w,ns3::Ptr<TrieNode>(new TrieNode(w,rec)));
+					std::pair < std::string,ns3::Ptr < TrieNode > > pa (*w,ns3::CreateObject<TrieNode>(w,rec));
 
 					m2->insert(pa);
 				}

@@ -12,8 +12,10 @@
 #include "ns3/CcnModule.h"
 #include "ns3/CCN_Name.h"
 #include <string>
+#include "ns3/Bloomfilter.h"
 
 class CcnModule;
+class Bloomfilter;
 
 class Sender : public ns3::Application
 {
@@ -26,6 +28,8 @@ public:
 	virtual ns3::TypeId GetInstanceTypeId (void) const;
 	~Sender();
 	Sender(ns3::Ptr<CcnModule> ccnm,int waitingTime);
+	void SendData2(ns3::Ptr<CCN_Name> data, char* buff, int bufflen,ns3::Ptr<Bloomfilter> bf,std::string hopc);
+	 void InterestReceived2(ns3::Ptr<CCN_Name> ccnn,ns3::Ptr<Bloomfilter> bf,std::string hopc);
 	//std::vector<char*> data;
 	//std::vector<int> length;
 	int waitingTime;

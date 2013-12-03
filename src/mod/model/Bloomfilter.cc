@@ -3,7 +3,19 @@
 Bloomfilter::Bloomfilter(int length,bool bits [])
 {
 	this->length=length;
-	filter=bits;
+	filter=new bool[length];
+
+	for(int i=0;i<length;i++)
+	{
+		if(bits[i]==0)
+		{
+			filter[i]=0;
+		}
+		else
+		{
+			filter[i]=1;
+		}
+	}
 }
 
 Bloomfilter::Bloomfilter(int length,std::string bits)
@@ -13,19 +25,21 @@ Bloomfilter::Bloomfilter(int length,std::string bits)
 
 	for(int i=0;i<length;i++)
 	{
-		if(bits.at(i)==0)
+		if(bits[i]=='0')
 		{
 			filter[i]=0;
 		}
-		else if(bits.at(i)==1)
+		else if(bits[i]=='1')
 		{
 			filter[i]=1;
 		}
 		else
 		{
-			std::cout<<"wrong bits"<<std::endl;
+			std::cout<<"wrong bits: "<<bits.at(i)<<std::endl;
 		}
 	}
+
+	//std::cout<<"o kataskeuastis:   "<<this->getstring()<<std::endl;
 }
 
 Bloomfilter::Bloomfilter(int length)
