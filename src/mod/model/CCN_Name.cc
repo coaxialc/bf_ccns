@@ -22,5 +22,7 @@ std::string CCN_Name::getValue()
 
 	result=result+"*";
 
+	//std::cout<<"CCN_Name.getValue: "<<result<<std::endl;
+
 	return result;
 }

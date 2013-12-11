@@ -19,7 +19,7 @@
 			this->ccnm->announceName(name, this);
 		}
 
-	    void Sender::InterestReceived2(ns3::Ptr<CCN_Name> ccnn,ns3::Ptr<Bloomfilter> bf,std::string hopc)
+	  /*  void Sender::InterestReceived2(ns3::Ptr<CCN_Name> ccnn,ns3::Ptr<Bloomfilter> bf,std::string hopc)
 	    		{
 	    			//std::cout<<"------------------Interest received: "<<ccnn->getValue()<<std::endl;
 	    			ns3::Time t=ns3::Seconds(this->waitingTime);
@@ -32,7 +32,7 @@
 	    			char* test=data.find(ccnn)->second;
 
 	    			ns3::Simulator::Schedule(t,&Sender::SendData2,this,ccnn,test,length.find(ccnn)->second,bf,hopc);
-	    		}
+	    		}*/
 
 
 
@@ -53,13 +53,14 @@
 
 		void Sender::SendData(ns3::Ptr<CCN_Name> data, char* buff, int bufflen)
 		{
+			std::cout<<"Sender calling sendData with payload: "<<buff<<" and length "<<bufflen<<std::endl;
 			this->ccnm->sendData( data, buff, bufflen,0,0,0);
 		}
 
-		void Sender::SendData2(ns3::Ptr<CCN_Name> data, char* buff, int bufflen,ns3::Ptr<Bloomfilter> bf,std::string hopc)
+		/*void Sender::SendData2(ns3::Ptr<CCN_Name> data, char* buff, int bufflen,ns3::Ptr<Bloomfilter> bf,std::string hopc)
 				{
 					this->ccnm->sendData( data, buff, bufflen,bf,atoi(hopc.c_str()),0);
-				}
+				}*/
 
 		ns3::TypeId Sender::GetTypeId(void)
 		{

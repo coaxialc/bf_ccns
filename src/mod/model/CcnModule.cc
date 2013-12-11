@@ -81,9 +81,11 @@ int CcnModule::dataCount=0;
 		void CcnModule::sendThroughDevice(Ptr<Packet> p,Ptr<NetDevice> nd)
 		{
 			Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
+			//pd->GetQueue()=CreateObject<DropTailQueue>();
 
 			if((pd->GetQueue()->IsEmpty()))
 			{
+
 				if(nd->GetChannel()->GetDevice(0)==nd)
 				{
 					nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
@@ -107,9 +109,11 @@ int CcnModule::dataCount=0;
 				{
 					Ptr<NetDevice> nd=this->n->GetDevice(i);
 					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
+					//pd->GetQueue()=CreateObject<DropTailQueue>();
 
 					if((pd->GetQueue()->IsEmpty()))
 					{
+						pd->GetQueue()->ResetStatistics();
 						if(nd->GetChannel()->GetDevice(0)==nd)
 						{
 
@@ -137,14 +141,26 @@ int CcnModule::dataCount=0;
 
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
+		//	std::cout<<"b2: "<<b2<<std::endl;
 
 			std::string dt(b2, b2+p->GetSize());//an de metrietai to header na bgalo to 4
 
-		//	std::cout<<"Payload: "<<dt<<std::endl;
+			//std::cout<<"Incoming payload: "<<dt<<std::endl;
+
+			while(dt[0]!='0'&&dt[0]!='1')
+			{
+				dt=dt.substr(1);
+			}
+
+			std::cout<<"Incoming payload (refined): "<<dt<<std::endl;
 
 			//extract bloom filter (variable length)
 			//-----------------------------------
 			std::string filter_string=dt.substr(0,this->length);
+			//filter_string=dt.substr(0,this->length);
+		//	std::cout<<"dt: "<<dt<<std::endl;
+			//std::cout<<"dt sub: "<<dt.substr(0,this->length)<<std::endl;
+			//std::cout<<"receiveabc Constructing filter with string: "<<filter_string<<std::endl;
 			ns3::Ptr<Bloomfilter> filter=CreateObject<Bloomfilter>(this->length,filter_string);
 			//-----------------------------------
 
@@ -230,7 +246,7 @@ int CcnModule::dataCount=0;
 					{
 						p_i_t->update(name,CreateObject<PTuple>(filter,(this->d)-hopc));
 
-						sendInterest(name,this->d,0);
+						sendInterest(name,this->d,0,nd);
 					}
 					else
 					{
@@ -248,7 +264,7 @@ int CcnModule::dataCount=0;
 				}
 				else
 				{
-					this->sendInterest(name , hopc-1 , orbf(filter,dtl->find(nd)->second));
+					this->sendInterest(name , hopc-1 , orbf(filter,dtl->find(nd)->second),0);
 				}
 			}
 			else if(type=='d')
@@ -287,6 +303,7 @@ int CcnModule::dataCount=0;
 
 						std::string value=dt.substr(pos+1);
 						char* v=const_cast<char*>(value.c_str());
+						//std::cout<<"CcnModule calling sendData with payload: "<<v<<" and length "<<value.length()<<std::endl;
 						this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
 					}
 				}
@@ -294,6 +311,7 @@ int CcnModule::dataCount=0;
 				{
 					std::string value=dt.substr(pos+1);
 					char* v=const_cast<char*>(value.c_str());
+					//std::cout<<"CcnModule calling sendData with payload: "<<v<<" and length "<<value.length()<<std::endl;
 					this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
 				}
 				//--------------------------------------------
@@ -302,7 +320,7 @@ int CcnModule::dataCount=0;
 			return true;
 		}
 
-		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf)
+		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf,ns3::Ptr<ns3::NetDevice> nd)
 		{
 			Ptr<Bloomfilter> rec2;
 			if(bf==0)
@@ -370,7 +388,21 @@ int CcnModule::dataCount=0;
 			}*/
 
 		//	std::cout<<"Constructing packet with string: "<<temp<<std::endl;
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1+this->length+hopc.length());
+
+		/*	uint8_t ta []=new uint8_t[length+1+this->length+hopc.length()];
+			ta=temp.c_str()*/;
+
+			//Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp[0]),length+1+this->length+hopc.length());
+			//Ptr<Packet> pa = Create<Packet>(ta,length+1+this->length+hopc.length());
+			//Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(temp.c_str()),length+1+this->length+hopc.length());
+
+			const void* pointer2=temp.c_str();
+			std::cout<<"sendInterest: static cast gives: "<<static_cast<const uint8_t *>(pointer2)<<std::endl;
+			Ptr<Packet> pa = Create<Packet>(static_cast<const uint8_t *>(pointer2),length+1+this->length+hopc.length());
+
+			uint8_t* b2=new uint8_t[pa->GetSize()];
+			pa->CopyData(b2,pa->GetSize());
+			std::cout<<"sendInterest: Packet constructed contains: "<<b2<<std::endl;
 
 			Ptr<Receivers> receivers=(FIB->prefix(*name))->re;
 
@@ -383,7 +415,31 @@ int CcnModule::dataCount=0;
 				{
 					if(hcounter!=this->d)
 					{
-						bca->InterestReceived2(name,bf,hopc);
+						//bca->InterestReceived2(name,bf,hopc);
+
+						//interest tracking because the insterest was for us although hop counter is not zero
+						//--------------------------------------------
+						Ptr<PTuple> rec=p_i_t->check(name);
+						if(rec==0)
+						{
+							p_i_t->update(name,CreateObject<PTuple>(bf,std::atoi(hopc.c_str())));
+						}
+						else
+						{
+							Ptr<PTuple> tuple=p_i_t->check(name);
+							p_i_t->erase(name);
+							if(tuple->ttl<(this->d)-std::atoi(hopc.c_str()))
+							{
+								p_i_t->update(name,CreateObject<PTuple>(orbf(bf,dtl->find(nd)->second),std::atoi(hopc.c_str())));
+							}
+							else
+							{
+								p_i_t->update(name,CreateObject<PTuple>(orbf(bf,dtl->find(nd)->second),tuple->ttl));
+							}
+						}
+						//--------------------------------------------
+
+						bca->InterestReceived(name);
 					}
 					else
 					{
@@ -439,7 +495,7 @@ int CcnModule::dataCount=0;
 				time=ttl;
 			}
 
-			int length=name->getValue().length();
+		//	int length=name->getValue().length();
 			std::string hopc;
 
 			if(time>9)
@@ -453,10 +509,23 @@ int CcnModule::dataCount=0;
 
 			//hopc=static_cast<ostringstream*>( &(ostringstream() << time) )->str();
 
-			std::string temp(buff,bufflen);
-			std::string temp2=rec->getstring()+hopc+"d"+name->getValue()+temp;
+			std::string* temp=new std::string(buff,bufflen);
+			std::string* temp2=new std::string(rec->getstring()+hopc+"d"+name->getValue()+*temp);
+			std::cout<<"sendData Constructing packet with string: "<<*temp2<<std::endl;
+		//	uint8_t ta []=new uint8_t[bufflen+length+1+this->length+hopc.length()];
+			//ta=temp2.c_str();
+			//Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp2[0]),bufflen+length+1+this->length+hopc.length());
+			//Ptr<Packet> pa = Create<Packet>(ta,bufflen+length+1+this->length+hopc.length());
+			//Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(temp2.c_str()),bufflen+length+1+this->length+hopc.length());
+			const void* pointer=temp2->c_str();
+			std::cout<<"sendData: static cast gives: "<<static_cast<const uint8_t *>(pointer)<<std::endl;
+			//Ptr<Packet> pa = Create<Packet>(static_cast<const uint8_t *>(pointer),bufflen+length+1+this->length+hopc.length());
+			Ptr<Packet> pa = Create<Packet>(static_cast<const uint8_t *>(pointer),temp2->length());
 
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>(&temp2[0]),bufflen+length+1+this->length+hopc.length());
+			uint8_t* b2=new uint8_t[pa->GetSize()];
+			pa->CopyData(b2,pa->GetSize());
+			std::cout<<"sendData: Packet constructed contains: "<<b2<<std::endl;
+			std::cout<<"sendData: Packet size: "<<pa->GetSize()<<std::endl;
 
 			this->send(pa,rec,excluded);
 
@@ -487,12 +556,14 @@ int CcnModule::dataCount=0;
 				uint32_t integer_result2=(bitset<32>(stringtobinarystring(result2).substr(96))).to_ulong();//we only keep the last 32 bits
 
 				bool* filter=new bool[this->length];
+				std::fill_n(filter, this->length, 0);
 
 				for(int j=0;j<4;j++)
 				{
 					int index=(integer_result1+j*j*integer_result2)%(this->length);
 					filter[index]=1;
 				}
+			//	std::cout<<"takecareofhashes Constructing filter with string: "<<filter<<std::endl;
 				Ptr<Bloomfilter> bf=CreateObject<Bloomfilter>(this->length,filter);
 
 				std::cout<<"filter: "<<bf->getstring()<<std::endl;

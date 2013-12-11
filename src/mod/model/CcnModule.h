@@ -73,7 +73,7 @@ class PIT;
 
 		void sendThroughDevice(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
 
-		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf);
+		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf,ns3::Ptr < ns3::NetDevice > nd);
 
 		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;

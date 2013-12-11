@@ -28,8 +28,8 @@ public:
 	virtual ns3::TypeId GetInstanceTypeId (void) const;
 	~Sender();
 	Sender(ns3::Ptr<CcnModule> ccnm,int waitingTime);
-	void SendData2(ns3::Ptr<CCN_Name> data, char* buff, int bufflen,ns3::Ptr<Bloomfilter> bf,std::string hopc);
-	 void InterestReceived2(ns3::Ptr<CCN_Name> ccnn,ns3::Ptr<Bloomfilter> bf,std::string hopc);
+	//void SendData2(ns3::Ptr<CCN_Name> data, char* buff, int bufflen,ns3::Ptr<Bloomfilter> bf,std::string hopc);
+	// void InterestReceived2(ns3::Ptr<CCN_Name> ccnn,ns3::Ptr<Bloomfilter> bf,std::string hopc);
 	//std::vector<char*> data;
 	//std::vector<int> length;
 	int waitingTime;

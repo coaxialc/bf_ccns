@@ -33,7 +33,7 @@
 				static std::string* name3=&temporary;
 				Ptr<CCN_Name> name4=Text::getPtr()->giveText(name3);
 
-				this->ccnm->sendInterest(name4,-1,0);
+				this->ccnm->sendInterest(name4,-1,0,0);
 			}
 		}
 

@@ -35,7 +35,7 @@ Bloomfilter::Bloomfilter(int length,std::string bits)
 		}
 		else
 		{
-			std::cout<<"wrong bits: "<<bits.at(i)<<std::endl;
+			std::cout<<"wrong bits: "<<bits[i]<<std::endl;
 		}
 	}
 
