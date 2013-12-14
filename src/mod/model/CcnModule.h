@@ -78,7 +78,7 @@ class PIT;
 		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
 
-		void sendData(ns3::Ptr<CCN_Name>, char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,ns3::Ptr<ns3::NetDevice> excluded);
+		void sendData(ns3::Ptr<CCN_Name>,const char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,ns3::Ptr<ns3::NetDevice> excluded);
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);

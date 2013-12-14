@@ -46,6 +46,18 @@ void BootstrappingHelper::parseTopology()
 		module->at(i)->setNode((p->kombos->at(i)));
 		module->at(i)->node=i;
 		module->at(i)->takeCareOfHashes();
+/*
+
+		for(unsigned j=0;j<module->at(i)->n->GetNDevices();j++)
+		{
+			Ptr<PointToPointNetDevice> pd = module->at(i)->n->GetDevice(j)->GetObject<PointToPointNetDevice> ();
+			Ptr<DropTailQueue> dtq=pd->GetQueue()->GetObject<DropTailQueue>();
+			//DropTailQueue* dtq= dynamic_cast<DropTailQueue*> (pd->GetQueue());
+			dtq->SetMode(ns3::Queue::QUEUE_MODE_PACKETS);
+		}
+*/
+
+
 	}
 
 	for(unsigned i=0;i<p->kombos->size();i++)
@@ -106,7 +118,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=20;
+		int numOfReq=100;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;

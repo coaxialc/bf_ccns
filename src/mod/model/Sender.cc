@@ -48,6 +48,8 @@
 		//	std::cout<<"ONOMA:      "<<ccnn->getValue()<<std::endl;
 			char* test=data.find(ccnn)->second;
 
+			std::cout<<"InterestReceived: node: "<<ccnm->node<<" replying with data"<<std::endl;
+
 			ns3::Simulator::Schedule(t,&Sender::SendData,this,ccnn,test,length.find(ccnn)->second);
 		}
 
