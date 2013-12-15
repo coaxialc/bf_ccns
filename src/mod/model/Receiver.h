@@ -33,6 +33,9 @@ public:
 	int length;
 	ns3::Ptr<CCN_Name> dataName;
 	void SendInterest(ns3::Ptr<CCN_Name> n,int num);
+	int askedfor;
+	int returned;
+	//std::vector < ns3::Ptr<CCN_Name> >* d;
 
 	virtual void DataArrived(ns3::Ptr<CCN_Name> data, char* buff, int bufflen);
 };

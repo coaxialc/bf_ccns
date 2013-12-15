@@ -39,7 +39,7 @@ function move
 rm -rf results.txt ./1221-results ./1755-results ./3257-results ./3967-results ./6461-results
 
 #declare -a topology=(1221 1755 3257 3967 6461)
-declare -a topology=(1221)
+declare -a topology=(6461)
 
 for i in ${topology[@]} 
 do

@@ -123,7 +123,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=10;
+		int numOfReq=20;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;
@@ -218,7 +218,7 @@ void BootstrappingHelper::startExperiment()
 
 			//print results and initialize structures again
 			//----------------------------------------------------
-			Ptr<ResultPrinter> rp=CreateObject<ResultPrinter>(module,gs,c);
+			Ptr<ResultPrinter> rp=CreateObject<ResultPrinter>(module,gs,c,sa1);
 
 			//print to file
 			//----------------------------------------------------

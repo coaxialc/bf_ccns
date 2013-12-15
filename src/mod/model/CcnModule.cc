@@ -83,6 +83,7 @@ int CcnModule::dataCount=0;
 		{
 			Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
 
+
 		/*	if((pd->GetQueue()->IsEmpty()))
 			{*/
 
@@ -103,6 +104,7 @@ int CcnModule::dataCount=0;
 			{
 				ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::sendThroughDevice,this,p,nd);
 			}*/
+				if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
 		}
 
 		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf,Ptr<NetDevice> excluded, std::string calledby)
@@ -574,7 +576,6 @@ int CcnModule::dataCount=0;
 					Ptr<NetDevice> nd=this->n->GetDevice(i);
 					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
 
-
 					if(nd->GetChannel()->GetDevice(0)==nd)
 					{
 
@@ -584,6 +585,7 @@ int CcnModule::dataCount=0;
 						std::string dt(b2, b2+p->GetSize());
 						std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;*/
 						nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
+						if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
 					}
 					else
 					{
@@ -592,6 +594,7 @@ int CcnModule::dataCount=0;
 						std::string dt(b2, b2+p->GetSize());
 						std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;*/
 						nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+						if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
 					}
 			    }
 			}

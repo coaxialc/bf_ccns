@@ -7,7 +7,11 @@
 
 		Receiver::Receiver(ns3::Ptr<CcnModule> ccnm)
 		{
+			askedfor=0;
+			returned=0;
 			this->ccnm=ccnm;
+			ccnm->r=this;
+			//d= new std::vector < ns3::Ptr<CCN_Name> >();
 		}
 
 		Receiver::~Receiver()
@@ -17,13 +21,14 @@
 
 		void Receiver::DataArrived(ns3::Ptr<CCN_Name> data, char* buff, int bufflen)
 		{
-		//	std::cout<<"Data arrived , "<<data->getValue()<<std::endl;
-
+			//d->push_back(data);
+			returned++;
 		}
 
 
 		void Receiver::SendInterest(ns3::Ptr<CCN_Name> name,int num)
 		{
+			
 			unsigned num2=num;
 			for(unsigned i=0;i<num2;i++)
 			{
@@ -36,7 +41,7 @@
 
 		//			std::cout<<"node "<<this->ccnm->node<<" requesting "<<name4->getValue()<<std::endl;
 
-
+				askedfor++;
 				this->ccnm->sendInterest(name4,-1,0,0);
 			}
 		}

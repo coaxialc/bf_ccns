@@ -10,13 +10,17 @@
 
 #include "ns3/core-module.h"
 #include "ns3/CcnModule.h"
+#include "ns3/Sender.h"
+
+class Sender;
 
 class ResultPrinter : public ns3::Object
 {
 	public:
-		ResultPrinter(std::vector < ns3::Ptr < CcnModule > > * module,int gs,int exp);
+		ResultPrinter(std::vector < ns3::Ptr < CcnModule > > * module,int gs,int exp,ns3::Ptr<Sender> s);
 		std::vector < ns3::Ptr < CcnModule > > * module;
 		~ResultPrinter();
+
 };
 
 #endif /* RESULTPRINTER_H_ */

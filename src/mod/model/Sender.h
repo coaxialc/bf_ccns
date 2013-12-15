@@ -33,6 +33,7 @@ public:
 	//std::vector<char*> data;
 	//std::vector<int> length;
 	int waitingTime;
+	int interests;
 	std::map < ns3::Ptr < CCN_Name > ,char*> data;
 	std::map < ns3::Ptr < CCN_Name > , int> length;
 	void MapTest(int l);

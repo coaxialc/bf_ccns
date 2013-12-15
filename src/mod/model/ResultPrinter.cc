@@ -2,7 +2,7 @@
 
 using namespace ns3;
 
-ResultPrinter::ResultPrinter(std::vector < Ptr < CcnModule > > * module,int gs,int exp)
+ResultPrinter::ResultPrinter(std::vector < Ptr < CcnModule > > * module,int gs,int exp,ns3::Ptr<Sender> s)
 {
 	this->module=module;
 
@@ -26,6 +26,21 @@ ResultPrinter::ResultPrinter(std::vector < Ptr < CcnModule > > * module,int gs,i
 			file<<"router "<<module->at(i)->node<<" data_count "<<module->at(i)->data<<std::endl;
 			file.close();
 		}
+
+	for(unsigned i=0;i<module->size();i++)
+	{
+		if(module->at(i)->r!=0)
+		{
+			//std::cout<<"receiver found"<<std::endl;
+			if(module->at(i)->r->returned!=module->at(i)->r->askedfor)
+			{
+				std::cout<<"A Receiver did not get everything it asked for!"<<std::endl;
+			}
+			std::cout<<"Receiver got "<<module->at(i)->r->returned<<".Asked for "<<module->at(i)->r->askedfor<<std::endl;
+		}
+	}
+
+	std::cout<<"Sender got "<<s->interests<<" interests."<<std::endl;
 }
 
 ResultPrinter::~ResultPrinter()

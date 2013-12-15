@@ -7,6 +7,7 @@
 		this->ccnm=ccnm;
 		this->waitingTime=waitingTime;
 		//dose FIb eggrafes kai onomata
+		this->interests=0;
 	}
 
 	Sender::~Sender()
@@ -38,6 +39,8 @@
 
 		void Sender::InterestReceived(ns3::Ptr<CCN_Name> ccnn)
 		{
+			interests++;
+
 			ns3::Time t=ns3::Seconds(this->waitingTime);
 
 
