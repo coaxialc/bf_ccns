@@ -34,7 +34,7 @@
 				Ptr<CCN_Name> name4=Text::getPtr()->giveText(name3);
 
 
-					std::cout<<"node "<<this->ccnm->node<<" requesting "<<name4->getValue()<<std::endl;
+		//			std::cout<<"node "<<this->ccnm->node<<" requesting "<<name4->getValue()<<std::endl;
 
 
 				this->ccnm->sendInterest(name4,-1,0,0);

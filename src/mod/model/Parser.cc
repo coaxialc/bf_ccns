@@ -113,7 +113,7 @@ using namespace ns3;
 			    				n.Add(k2);
 
 			    				PointToPointHelper pph;
-			    				pph.SetQueue(std::string("ns3::DropTailQueue"),std::string("MaxPackets"),ns3::UintegerValue(50000000), std::string("MaxBytes"),ns3::UintegerValue(50000000));
+			    			//	pph.SetQueue(std::string("ns3::DropTailQueue"),std::string("MaxPackets"),ns3::UintegerValue(50000000), std::string("MaxBytes"),ns3::UintegerValue(50000000));
 			    				pph.SetDeviceAttribute("DataRate", StringValue ("5Mbps"));
 			    				pph.SetChannelAttribute("Delay", StringValue ("2ms"));
 			    				ndc=pph.Install(n);

@@ -105,28 +105,37 @@ int CcnModule::dataCount=0;
 			}*/
 		}
 
-		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf,Ptr<NetDevice> excluded)
+		void CcnModule::send(Ptr<Packet> p,Ptr<Bloomfilter> bf,Ptr<NetDevice> excluded, std::string calledby)
 		{
-			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			/*for(unsigned i=0;i<this->n->GetNDevices();i++)
 			{
 				if(this->n->GetDevice(i)!=excluded&&equals(add(dtl->find(this->n->GetDevice(i))->second,bf),(dtl->find(this->n->GetDevice(i))->second)))
 				{
 					Ptr<NetDevice> nd=this->n->GetDevice(i);
 					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
 
-					/*if((pd->GetQueue()->IsEmpty()))
-					{*/
+					if((pd->GetQueue()->IsEmpty()))
+					{
 					//	pd->GetQueue()->ResetStatistics();
 						if(nd->GetChannel()->GetDevice(0)==nd)
 						{
 							//Ptr<DropTailQueue> dtq=pd->GetQueue()->GetObject<DropTailQueue>();
 							//dtq->SetMode(ns3::Queue::QUEUE_MODE_PACKETS);
+
+							uint8_t* b2=new uint8_t[p->GetSize()];
+							p->CopyData(b2,p->GetSize());
+							std::string dt(b2, b2+p->GetSize());
+							std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;
 							nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
 						}
 						else
 						{
 							//Ptr<DropTailQueue> dtq=pd->GetQueue()->GetObject<DropTailQueue>();
 							//dtq->SetMode(ns3::Queue::QUEUE_MODE_PACKETS);
+							uint8_t* b2=new uint8_t[p->GetSize()];
+							p->CopyData(b2,p->GetSize());
+							std::string dt(b2, b2+p->GetSize());
+							std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;
 							nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
 						}
 //					}
@@ -135,7 +144,7 @@ int CcnModule::dataCount=0;
 //						ns3::Simulator::Schedule(MilliSeconds(10),&CcnModule::send,this,p,bf,excluded);
 //					}
 				}
-			}
+			}*/
 		}
 
 
@@ -145,20 +154,24 @@ int CcnModule::dataCount=0;
 			{
 				 std::cout<<"receiveabc: called with null device"<<std::endl;
 			}
-			/*CCNPacketSizeHeader h5;
-			p->PeekHeader(h5);
-		    std::cout<<"header: "<<h5.data<<std::endl;*/
 
 			std::string prename;
 
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
+			std::string dt(b2, b2+p->GetSize());
 
-			std::string dt(b2, b2+p->GetSize());//an de metrietai to header na bgalo to 4
-		//	dt=dt.substr(4);
+			int counter=0;
+			while(dt[0]!='0'&&dt[0]!='1')
+			{
+				counter++;
+				dt=dt.substr(1);
+			}
 
-			std::cout<<"Incoming packet size: "<<p->GetSize()<<std::endl;
-			std::cout<<"Incoming payload: "<<dt<<std::endl;
+			//int newsize=p->GetSize()-counter;
+
+			//std::cout<<"Incoming packet size: "<<p->GetSize()<<std::endl;
+		//	std::cout<<"Incoming payload: "<<dt<<std::endl;
 
 			//extract bloom filter (variable length)
 			//-----------------------------------
@@ -245,7 +258,7 @@ int CcnModule::dataCount=0;
 					rec=p_i_t->check(name);
 					if(rec==0)
 					{
-						std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
+				//		std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
 						p_i_t->update(name,CreateObject<PTuple>(filter,(this->d)-hopc));
 
 						sendInterest(name,this->d,0,nd);
@@ -256,12 +269,12 @@ int CcnModule::dataCount=0;
 						p_i_t->erase(name);
 						if(tuple->ttl<(this->d)-hopc)
 						{
-							std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
+		//					std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
 							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),(this->d)-hopc));
 						}
 						else
 						{
-							std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
+		//					std::cout<<"receiveabc: node: "<<this->node<<" updating PIT with name"<<name->getValue()<<std::endl;
 							p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),tuple->ttl));
 						}
 					}
@@ -286,7 +299,7 @@ int CcnModule::dataCount=0;
 				if(this->r!=0)
 				{
 					std::string value=dt.substr(pos+1,dt.length()-pos-2);
-					char* v=const_cast<char*>(value.c_str());
+					char* v=&value[0];
 					r->DataArrived(name,v,value.length());
 				}
 				//--------------------------------------------
@@ -306,7 +319,7 @@ int CcnModule::dataCount=0;
 
 						std::string value=dt.substr(pos+1,dt.length()-pos-2);
 
-						const char* v=&(value.c_str()[0]);
+						char* v=&value[0];
 
 						this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
 					}
@@ -315,7 +328,7 @@ int CcnModule::dataCount=0;
 				{
 					std::string value=dt.substr(pos+1,dt.length()-pos-2);
 
-					const char* v=&(value.c_str()[0]);
+					char* v=&value[0];
 
 					this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
 				}
@@ -386,11 +399,11 @@ int CcnModule::dataCount=0;
 			}
 
 			std::string temp(d2,length);
-			const std::string temp2=rec2->getstring()+hopc+temp+"i";
+			std::string temp2=rec2->getstring()+hopc+temp+"i";
 
 			//const void* pointer2=temp.c_str();
 
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t *>(temp2.data()),length+1+this->length+hopc.length());
+			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t *>(&temp2[0]),length+1+this->length+hopc.length());
 
 			/*CCNPacketSizeHeader h2;
 			h2.data=30;
@@ -433,21 +446,21 @@ int CcnModule::dataCount=0;
 								{
 									if(nd==0)
 									{
-										std::cout<<"sendInterest: nd is null in node "<<this->node<<std::endl;
+								//		std::cout<<"sendInterest: nd is null in node "<<this->node<<std::endl;
 									}
 									else
 									{
-										std::cout<<"sendInterest: address not in map: "<<nd->GetAddress()<<std::endl;
-										std::cout<<"sendInterest: map:"<<std::endl;
+										//std::cout<<"sendInterest: address not in map: "<<nd->GetAddress()<<std::endl;
+									//	std::cout<<"sendInterest: map:"<<std::endl;
 										for(unsigned i=0;i<this->n->GetNDevices();i++)
 										{
 											if(dtl->find(this->n->GetDevice(i))->second!=0)
 											{
-												std::cout<<"sendInterest: address: "<<this->n->GetDevice(i)->GetAddress()<<" "<<dtl->find(this->n->GetDevice(i))->second<<std::endl;
+										//		std::cout<<"sendInterest: address: "<<this->n->GetDevice(i)->GetAddress()<<" "<<dtl->find(this->n->GetDevice(i))->second<<std::endl;
 										    }
 											else
 											{
-											    std::cout<<"sendInterest: address: "<<this->n->GetDevice(i)->GetAddress()<<" not in map"<<std::endl;
+											//    std::cout<<"sendInterest: address: "<<this->n->GetDevice(i)->GetAddress()<<" not in map"<<std::endl;
 											}
 										}
 									}
@@ -473,9 +486,9 @@ int CcnModule::dataCount=0;
 			}
 		}
 
-		void CcnModule::sendData(ns3::Ptr<CCN_Name> name,const char* buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,Ptr<NetDevice> excluded)
+		void CcnModule::sendData(ns3::Ptr<CCN_Name> name,char* buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,Ptr<NetDevice> excluded)
 		{
-			std::cout<<"sendData: node: "<<this->node<<" just called with name "<<name->getValue()<<std::endl;
+			//std::cout<<"sendData: node: "<<this->node<<" just called with name "<<name->getValue()<<std::endl;
 			int time;
 			Ptr<Bloomfilter> rec;
 			if(bf==0)
@@ -515,24 +528,26 @@ int CcnModule::dataCount=0;
 					hopc="0"+static_cast<ostringstream*>( &(ostringstream() << time) )->str();
 			}
 
-			std::string* temp=new std::string(buff,bufflen);
+			std::string temp(buff,bufflen);
 
 			std::string n=name->getValue();
 
-			std::string* temp2=new std::string(rec->getstring()+hopc+n+*temp+"d");
+			std::string temp2=rec->getstring()+hopc+n+temp+"d";
 
-			const std::string stemp2=*temp2;
+		//	std::string stemp2=*temp2;
 		//	const void* pointer=stemp2.c_str();
 
 
 
 
-			Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t *>(stemp2.data()),this->length+hopc.length()+1+n.length()+bufflen);
+		//	Ptr<Packet> p = Create<Packet>(reinterpret_cast<const uint8_t *>(&temp2[0]),this->length+hopc.length()+1+n.length()+bufflen);
+			//Ptr<Packet> pa = Create<Packet>(reinterpret_cast<const uint8_t*>("0011000000000000000010000000100000001000000000001000000100000000000010000001000000000000000000000010101000100000001100001010000000/domain1/domain2/domain3/4*hellod"),163);
+
 
 			/* CCNPacketSizeHeader h2;
 			 h2.data=30;
 			 pa->AddHeader(h2);*/
-			std::cout<<"sendData: bufflen: "<<bufflen<<std::endl;
+		//	std::cout<<"sendData: bufflen: "<<bufflen<<std::endl;
 			/*std::cout<<"sendData: sizes------------------------ "<<std::endl;
 			std::cout<<"sendData: buffer size: "<<this->length+hopc.length()+1+n.length()+bufflen<<std::endl;
 			std::cout<<"sendData: bufflen: "<<bufflen<<std::endl;
@@ -549,13 +564,39 @@ int CcnModule::dataCount=0;
 			std::cout<<"sendData: Packet constructed contains: "<<b2<<std::endl;
 			std::cout<<"sendData: Packet size: "<<pa->GetSize()<<std::endl;*/
 
-			this->send(pa,rec,excluded);
+			std::string calledby="modified";
 
-		//	std::cout<<"sendData: send method called"<<std::endl;
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				Ptr<Packet> p=Create<Packet>(reinterpret_cast<const uint8_t *>(&temp2[0]),this->length+hopc.length()+1+n.length()+bufflen);
+				if(this->n->GetDevice(i)!=excluded&&equals(add(dtl->find(this->n->GetDevice(i))->second,rec),(dtl->find(this->n->GetDevice(i))->second)))
+				{
+					Ptr<NetDevice> nd=this->n->GetDevice(i);
+					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
+
+
+					if(nd->GetChannel()->GetDevice(0)==nd)
+					{
+
+
+						/*uint8_t* b2=new uint8_t[p->GetSize()];
+						p->CopyData(b2,p->GetSize());
+						std::string dt(b2, b2+p->GetSize());
+						std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;*/
+						nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
+					}
+					else
+					{
+						/*uint8_t* b2=new uint8_t[p->GetSize()];
+						p->CopyData(b2,p->GetSize());
+						std::string dt(b2, b2+p->GetSize());
+						std::cout<<"send:"<<" (caled by "<<calledby<<")"<<": packet before sending: "<<dt<<std::endl;*/
+						nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+					}
+			    }
+			}
 
 			//p_i_t->erase(name);
-
-		//	std::cout<<"sendData: PIT entry erased"<<std::endl;
 		}
 
 		void CcnModule::announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app)

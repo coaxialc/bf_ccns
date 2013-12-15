@@ -46,16 +46,21 @@ void BootstrappingHelper::parseTopology()
 		module->at(i)->setNode((p->kombos->at(i)));
 		module->at(i)->node=i;
 		module->at(i)->takeCareOfHashes();
-/*
 
-		for(unsigned j=0;j<module->at(i)->n->GetNDevices();j++)
+
+	/*	for(unsigned j=0;j<module->at(i)->n->GetNDevices();j++)
 		{
-			Ptr<PointToPointNetDevice> pd = module->at(i)->n->GetDevice(j)->GetObject<PointToPointNetDevice> ();
-			Ptr<DropTailQueue> dtq=pd->GetQueue()->GetObject<DropTailQueue>();
-			//DropTailQueue* dtq= dynamic_cast<DropTailQueue*> (pd->GetQueue());
-			dtq->SetMode(ns3::Queue::QUEUE_MODE_PACKETS);
-		}
-*/
+			module->at(i0->dtl->find(module->at(i)->n->GetDevice(j))->second
+		}*/
+
+		/*for(unsigned j=0;j<module->at(i)->n->GetNDevices();j++)
+				{
+					Ptr<PointToPointNetDevice> pd = module->at(i)->n->GetDevice(j)->GetObject<PointToPointNetDevice> ();
+					Ptr<DropTailQueue> dtq=pd->GetQueue()->GetObject<DropTailQueue>();
+					//DropTailQueue* dtq= dynamic_cast<DropTailQueue*> (pd->GetQueue());
+					dtq->SetMode(ns3::Queue::QUEUE_MODE_PACKETS);
+				}*/
+
 
 
 	}
@@ -118,7 +123,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=100;
+		int numOfReq=10;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;
@@ -149,12 +154,12 @@ void BootstrappingHelper::startExperiment()
 			for(int i=0;i<numOfReq;i++)
 			{
 				nameVector->push_back(text->giveText(sv->at(i)));
-			//	std::cout<<"vector:      "<<nameVector->at(i)->getValue()<<std::endl;
+
 			}
 
 			for(int i=0;i<numOfReq;i++)
 			{
-				const std::pair < ns3::Ptr< CCN_Name >, char* > pa (nameVector->at(i),d2);
+				const std::pair < ns3::Ptr< CCN_Name >,char* > pa (nameVector->at(i),d2);
 
 				sa1->data.insert(pa);
 

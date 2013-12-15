@@ -33,11 +33,11 @@ public:
 	//std::vector<char*> data;
 	//std::vector<int> length;
 	int waitingTime;
-	std::map < ns3::Ptr < CCN_Name > , char*> data;
+	std::map < ns3::Ptr < CCN_Name > ,char*> data;
 	std::map < ns3::Ptr < CCN_Name > , int> length;
+	void MapTest(int l);
 
-
-	void SendData(ns3::Ptr<CCN_Name> data, char* buff, int bufflen);
+	void SendData(ns3::Ptr<CCN_Name> data,char* buff, int bufflen);
 	virtual void InterestReceived(ns3::Ptr<CCN_Name> ccnn);
 
 

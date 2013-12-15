@@ -22,7 +22,7 @@ int main(int argc ,char *argv[])
 
 	 /* Config::SetDefault ("ns3::BurstErrorModel::ErrorRate", DoubleValue (0));
 	  Config::SetDefault ("ns3::BurstErrorModel::BurstSize", StringValue ("ns3::UniformRandomVariable[Min=0|Max=1]"));*/
-	  Config::SetDefault("ns3::ErrorModel::IsEnabled",BooleanValue("false"));
+//	  Config::SetDefault("ns3::ErrorModel::IsEnabled",BooleanValue("false"));
 
 	/*  Config::SetDefault("ns3::DropTailQueue::MaxPackets", UintegerValue(10000000));
 	  Config::SetDefault("ns3::DropTailQueue::MaxBytes", UintegerValue(10000000));*/
@@ -47,8 +47,8 @@ int main(int argc ,char *argv[])
 	//std::cout<<argv[1]<<std::endl;
 
 	//std::string temp="topology.txt";
-	//Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(std::atoi(argv[3]),argv[1],std::atoi(argv[2]),std::atoi(argv[4]),std::atoi(argv[5]),std::atoi(argv[6]));
-	Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(129,"1221.txt",12,128,4,0);
+	Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(std::atoi(argv[3]),argv[1],std::atoi(argv[2]),std::atoi(argv[4]),std::atoi(argv[5]),std::atoi(argv[6]));
+//	Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(129,"1221.txt",12,128,4,0);
 
 	bh->parseTopology();
 
