@@ -123,7 +123,7 @@ void BootstrappingHelper::startExperiment()
 */
 
 	{
-		int numOfReq=100;
+		int numOfReq=200;
 
 		std::cout<<"******************************************************"<<std::endl;
 		std::cout<<"                  Group size: "<<gs<<std::endl;
