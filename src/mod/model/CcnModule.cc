@@ -163,7 +163,7 @@ int CcnModule::dataCount=0;
 					else
 					{
 						Ptr<PTuple> tuple=p_i_t->check(name);
-						p_i_t->erase(name);
+						p_i_t->erase(name);//an oso einai sbismeno ,tote thelei na apantisei o allos?
 						p_i_t->update(name,CreateObject<PTuple>( orbf(tuple->bf,(orbf(filter,dtl->find(nd)->second))) ,(this->d)));//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
 					}
 				}
@@ -321,11 +321,13 @@ int CcnModule::dataCount=0;
 							{
 								p_i_t->update(name,CreateObject<PTuple>(rec2,(this->d)-newcounter));
 							}
+
+							bca->InterestReceived(name);
 						}
 						else
 						{
 							Ptr<PTuple> tuple=p_i_t->check(name);
-							p_i_t->erase(name);
+							p_i_t->erase(name);//an oso einai sbismeno ,tote thelei na apantisei o allos?
 
 							int temporary=0;
 							if(newcounter==this->d)
@@ -346,8 +348,6 @@ int CcnModule::dataCount=0;
 								p_i_t->update(name,CreateObject<PTuple>(orbf(rec2,tuple->bf),tuple->ttl));
 							}
 						}
-
-						bca->InterestReceived(name);
 					}
 					else
 					{
