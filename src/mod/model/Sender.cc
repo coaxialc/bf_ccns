@@ -44,7 +44,10 @@
 			ns3::Time t=ns3::Seconds(this->waitingTime);
 
 
-
+			if(data.find(ccnn)==data.end())
+			{
+				std::cout<<"Interest received for data I don't have!"<<std::endl;
+			}
 
 			char* test=data.find(ccnn)->second;
 

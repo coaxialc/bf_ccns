@@ -158,7 +158,7 @@ int CcnModule::dataCount=0;
 					{
 						p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),this->d));//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
 
-						sendInterest(name,this->d,0,nd);//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
+						sendInterest(name,this->d,0,nd);//eite paei gia proothisi eite gia anebasma ,thelei megisto hc
 					}
 					else
 					{
@@ -199,7 +199,7 @@ int CcnModule::dataCount=0;
 					if(p_i_t->check(name)==0)
 					{
 						//agnoeitai
-						std::cout<<"Packet ignored ,did not know what to do."<<std::endl;
+					//	std::cout<<"Packet ignored ,did not know what to do."<<std::endl;
 					}
 					else
 					{
@@ -313,15 +313,33 @@ int CcnModule::dataCount=0;
 
 						if(rec==0)
 						{
-							p_i_t->update(name,CreateObject<PTuple>(rec2,newcounter));
+							if(newcounter==this->d)
+							{
+								p_i_t->update(name,CreateObject<PTuple>(rec2,1));
+							}
+							else
+							{
+								p_i_t->update(name,CreateObject<PTuple>(rec2,(this->d)-newcounter));
+							}
 						}
 						else
 						{
 							Ptr<PTuple> tuple=p_i_t->check(name);
 							p_i_t->erase(name);
-							if(tuple->ttl<newcounter)
+
+							int temporary=0;
+							if(newcounter==this->d)
 							{
-								p_i_t->update(name,CreateObject<PTuple>(orbf(rec2,tuple->bf),newcounter));
+								temporary=1;
+							}
+							else
+							{
+								temporary=(this->d)-newcounter;
+							}
+
+							if(tuple->ttl<temporary)
+							{
+								p_i_t->update(name,CreateObject<PTuple>(orbf(rec2,tuple->bf),temporary));
 							}
 							else
 							{
