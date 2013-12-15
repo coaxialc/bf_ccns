@@ -89,7 +89,7 @@ class PIT;
 
 		void takeCareOfHashes();
 
-		void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<Bloomfilter> bf,ns3::Ptr<ns3::NetDevice> excluded,std::string calledby);
+		//void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<Bloomfilter> bf,ns3::Ptr<ns3::NetDevice> excluded,std::string calledby);
 
 		bool receiveabc(ns3::Ptr<ns3::NetDevice> nd,ns3::Ptr<const ns3::Packet> p,uint16_t a,const ns3::Address& ad);
 	};
