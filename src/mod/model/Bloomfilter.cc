@@ -104,3 +104,31 @@ bool operator<(const ns3::Ptr<Bloomfilter>& f,const ns3::Ptr<Bloomfilter>& s)
 		return false;
 	}
 }
+
+bool operator<(const Bloomfilter& f,const Bloomfilter& s)
+{
+	if(f.length<s.length)
+	{
+		return true;
+	}
+	else if(f.length>s.length)
+	{
+		return false;
+	}
+	else
+	{
+		for(int i=0;i<f.length;i++)
+		{
+			if(f.filter[i]==1&&s.filter[i]==0)
+			{
+				return false;
+			}
+			else if(f.filter[i]==0&&s.filter[i]==1)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+}

@@ -75,7 +75,7 @@ class PIT;
 
 		void sendInterest(ns3::Ptr<CCN_Name> name,int h,ns3::Ptr < Bloomfilter > bf,ns3::Ptr < ns3::NetDevice > nd);
 
-		std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
+	//	std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
 		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
 
 		void sendData(ns3::Ptr<CCN_Name>,char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,ns3::Ptr<ns3::NetDevice> excluded);

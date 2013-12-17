@@ -22,7 +22,7 @@ int CcnModule::dataCount=0;
 			text=Text::getPtr();
 			FIB=CreateObject<Trie>(this);
 			DATA=new std::vector < Ptr<CCN_Name> > ();
-			ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
+			//ltd=new std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > > ();
 			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();
 			this->rv=rv;
 		}
@@ -63,7 +63,7 @@ int CcnModule::dataCount=0;
 			p_i_t=0;
 			FIB=0;
 			delete DATA;
-			delete ltd;
+		//	delete ltd;
 			delete dtl;
 		}
 
@@ -164,6 +164,7 @@ int CcnModule::dataCount=0;
 					{
 						Ptr<PTuple> tuple=p_i_t->check(name);
 						p_i_t->erase(name);//an oso einai sbismeno ,tote thelei na apantisei o allos?
+					//	std::cout<<"node "<<this->node<<"after erase bf is: "<<tuple->bf->getstring()<<" and ttl is: "<<tuple->ttl<<std::endl;
 						p_i_t->update(name,CreateObject<PTuple>( orbf(tuple->bf,(orbf(filter,dtl->find(nd)->second))) ,(this->d)));//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
 					}
 				}
@@ -204,7 +205,7 @@ int CcnModule::dataCount=0;
 					else
 					{
 						Ptr<PTuple> pt=p_i_t->check(name);
-						if(pt->ttl==0) return true;
+					//	if(pt->ttl==0) return true;
 
 						std::string value=dt.substr(pos+1,dt.length()-pos-2);
 
@@ -232,7 +233,7 @@ int CcnModule::dataCount=0;
 			Ptr<Bloomfilter> rec2;
 			if(bf==0)
 			{
-				rec2=CreateObject<Bloomfilter>(this->length);//this constructor return an emtpy Bloom filter
+				rec2=CreateObject<Bloomfilter>(this->length);//this constructor returns an emtpy Bloom filter
 			}
 			else
 			{
@@ -315,7 +316,7 @@ int CcnModule::dataCount=0;
 						{
 							if(newcounter==this->d)
 							{
-								p_i_t->update(name,CreateObject<PTuple>(rec2,1));
+								p_i_t->update(name,CreateObject<PTuple>(rec2,0));
 							}
 							else
 							{
@@ -328,11 +329,13 @@ int CcnModule::dataCount=0;
 						{
 							Ptr<PTuple> tuple=p_i_t->check(name);
 							p_i_t->erase(name);//an oso einai sbismeno ,tote thelei na apantisei o allos?
+						//	std::cout<<"node "<<this->node<<"after earase bf is: "<<tuple->bf->getstring()<<" and ttl is: "<<tuple->ttl<<std::endl;
+						//	me pooi kano update na do an ginetai sosta
 
 							int temporary=0;
 							if(newcounter==this->d)
 							{
-								temporary=1;
+								temporary=0;
 							}
 							else
 							{
@@ -463,8 +466,8 @@ int CcnModule::dataCount=0;
 
 			//	std::cout<<"filter: "<<bf->getstring()<<std::endl;
 
-				const std::pair < ns3::Ptr< Bloomfilter >, ns3::Ptr< NetDevice > > pa (bf,this->n->GetDevice(i));
-			    this->ltd->insert(pa);
+			//	const std::pair < ns3::Ptr< Bloomfilter >, ns3::Ptr< NetDevice > > pa (bf,this->n->GetDevice(i));
+			 //   this->ltd->insert(pa);
 
 			    const std::pair < ns3::Ptr< NetDevice > , ns3::Ptr < Bloomfilter > > pa2 (this->n->GetDevice(i),bf);
 			    this->dtl->insert(pa2);
@@ -535,6 +538,11 @@ int CcnModule::dataCount=0;
 			     }
 			}
 
+			/*std::cout<<"--------------------------------------------------------------------"<<endl;
+			std::cout<<"adding "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+			std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
+			std::cout<<"--------------------------------------------------------------------"<<endl;*/
+
 			return CreateObject<Bloomfilter>(f->length,result);
 		}
 
@@ -546,9 +554,18 @@ int CcnModule::dataCount=0;
 			{
 				if(f->filter[i]!=s->filter[i])
 				{
+					/*std::cout<<"--------------------------------------------------------------------"<<endl;
+					std::cout<<"equals: "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+					std::cout<<"result: false"<<std::endl;
+					std::cout<<"--------------------------------------------------------------------"<<endl;*/
 					return false;
 				}
 			}
+
+//			std::cout<<"--------------------------------------------------------------------"<<endl;
+//			std::cout<<"equals: "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+//			std::cout<<"result: true"<<std::endl;
+//			std::cout<<"--------------------------------------------------------------------"<<endl;
 
 			return true;
 		}
@@ -591,5 +608,9 @@ int CcnModule::dataCount=0;
 
 		//	std::cout<<"OR between "<<f->getstring()<<" and "<<std::endl<<s->getstring()<<std::endl<<"gives "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
 
+			/*std::cout<<"--------------------------------------------------------------------"<<endl;
+			std::cout<<"or: "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+			std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
+			std::cout<<"--------------------------------------------------------------------"<<endl;*/
 			return CreateObject<Bloomfilter>(f->length,result);
 		}
