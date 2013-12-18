@@ -132,3 +132,65 @@ bool operator<(const Bloomfilter& f,const Bloomfilter& s)
 		return false;
 	}
 }
+
+ns3::Ptr<Bloomfilter> Bloomfilter::AND(ns3::Ptr<Bloomfilter> f)
+{
+	if(f->length!=this->length)
+	{
+		 return 0;
+	}
+
+	bool* result=new bool [f->length];
+
+	for(int i=0;i<f->length;i++)
+	{
+		 if(f->filter[i]==1&&this->filter[i]==1)
+		 {
+			 result[i]=1;
+		 }
+		 else
+		 {
+			 result[i]=0;
+		 }
+	}
+
+	/*std::cout<<"--------------------------------------------------------------------"<<endl;
+	std::cout<<"adding "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+	std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
+	std::cout<<"--------------------------------------------------------------------"<<endl;*/
+
+	return CreateObject<Bloomfilter>(f->length,result);
+}
+
+void Bloomfilter::OR(ns3::Ptr<Bloomfilter> f)
+{
+	if(f==0)
+	{
+		 std::cout<<"orbf: f is null"<<std::endl;
+	}
+	else if(s==0)
+	{
+		 std::cout<<"orbf: s is null"<<std::endl;
+	}
+
+
+	if(f->length!=this->length)
+	{
+		 std::cout<<"orbf: different sizes"<<std::endl;
+	}
+
+	for(int i=0;i<f->length;i++)
+	{
+		 if(f->filter[i]==1||this->filter[i]==1)
+		 {
+			 this->filter[i]=1;
+		 }
+	}
+
+//	std::cout<<"OR between "<<f->getstring()<<" and "<<std::endl<<s->getstring()<<std::endl<<"gives "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
+
+	/*std::cout<<"--------------------------------------------------------------------"<<endl;
+	std::cout<<"or: "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
+	std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
+	std::cout<<"--------------------------------------------------------------------"<<endl;*/
+}

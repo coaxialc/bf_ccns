@@ -94,58 +94,194 @@ int CcnModule::dataCount=0;
 				if((pd->GetQueue()->GetTotalDroppedPackets()!=0)) std::cout<<"packets dropped"<<std::endl;
 		}
 
-		bool CcnModule::receiveabc(Ptr<NetDevice> nd,Ptr<const Packet> p,uint16_t a,const Address& ad)
+		bool CcnModule::handlePacket(Ptr<NetDevice> nd,Ptr<const Packet> p,uint16_t a,const Address& ad)
 		{
-			if(nd==0)
+			char type = extract_packet_type(p);
+			if (type == "i")
 			{
-				 std::cout<<"receiveabc: called with null device"<<std::endl;
+				handleIncomingInterest(p, nd);
+			}
+			else if (type == "d")
+			{
+				handleIncomingData(p, nd);
 			}
 
-			std::string prename;
-
+			return true;
+		}
+		
+		char CcnModule::extract_packet_type(Ptr<Packet> p)
+		{
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
-			std::string dt(b2, b2+p->GetSize());
 
-			int counter=0;
-			while(dt[0]!='0'&&dt[0]!='1')
+			return ((char)(b2[p->GetSize()-1]));
+		}
+
+		void CcnModule::handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd)
+		{
+			data++;
+			dataCount++;
+
+			Ptr<CCN_Data> data=CreateObject<CCN_Data>(p);
+			if(data->getHopCounter()<0) break;
+
+			//mipos einai gia 'mena?
+			//--------------------------------------------
+			ns3::Ptr<TrieNode> tn=FIB->prefix(*(data->getName()));
+			for(unsigned i=0;i<tn->re->receivers->size();i++)
 			{
-				counter++;
-				dt=dt.substr(1);
+				Object* o=&(*(tn->re->receivers->at(i)));
+				Sender* bca= dynamic_cast<Sender*> (o);
+
+				if(bca!=0&&bca==)
 			}
+			if(this->r!=0)
+			{
+				std::string value=dt.substr(pos+1,dt.length()-pos-2);
+				char* v=&value[0];
+				r->DataArrived(name,v,value.length());
+			}
+			//--------------------------------------------
 
-			//int newsize=p->GetSize()-counter;
 
-			//std::cout<<"Incoming packet size: "<<p->GetSize()<<std::endl;
-		//	std::cout<<"Incoming payload: "<<dt<<std::endl;
+			//--------------------------------------------
+			if(hopc==0)//continue using PIT
+			{
+				if(p_i_t->check(name)==0)
+				{
+					//agnoeitai
+				//	std::cout<<"Packet ignored ,did not know what to do."<<std::endl;
+				}
+				else
+				{
+					Ptr<PTuple> pt=p_i_t->check(name);
+				//	if(pt->ttl==0) return true;
 
-			//extract bloom filter (variable length)
-			//-----------------------------------
-			std::string filter_string=dt.substr(0,this->length);
+					std::string value=dt.substr(pos+1,dt.length()-pos-2);
 
-			ns3::Ptr<Bloomfilter> filter=CreateObject<Bloomfilter>(this->length,filter_string);
-			//-----------------------------------
+					char* v=&value[0];
 
-			//extract hop counter (2 characters)
-			//-----------------------------------
-			std::string hopcounter=dt.substr(this->length,2);
-			int hopc=std::atoi(hopcounter.c_str());
-			//-----------------------------------
+					this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
+				}
+			}
+			else//continue using Bloom filters
+			{
+				std::string value=dt.substr(pos+1,dt.length()-pos-2);
 
-			dt=dt.substr(this->length+2);
+				char* v=&value[0];
 
-			int pos=dt.find("*");
-			prename=dt.substr(0,pos);//pairnoume to onoma xoris *
+				this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
+			}
+		}
 
-			char type=dt.at(dt.length()-1);
+		void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd)
+		{
+			Ptr<CCN_Interest> interest = CreateObject<CCN_Interest>(p);
+			interest->decreaseHopCounter();
+			interest->getBloomfilter()->OR(Ptr<Bloomfilter>(dtl->find(nd)));
+			
+			Ptr<PTuple> tuple=this->p_i_t->check(interest->name);
+			if (tuple!=0)
+			{
+				tuple->bf=interest->getBloomfilter();
+				tuple->ttl=interest->getHopCounter();
+			}
+			else if (interest->getHopCounter() == 0)
+			{
+				existing_record_found = this->p_i_t->addRecord(interest->name, interest->getBF(), d - interest->hopCounter()+1)
+				if (existing_record_found)
+				{
+					//aggregate interest, do not forward
+					return;
+				}
+			}
+			
+			ns3::Ptr<TrieNode> tn = this->FIB->prefix(*(interest->name));
+			for(unsigned i=0;i<tn->re->receivers->size();i++)
+			{
+				Object* o=&(*(tn->re->receivers->at(i)));
+				Sender* bca= dynamic_cast<Sender*> (o);
 
-			std::string name_value=prename;
+				if(bca!=0)
+				{
+					this->p_i_t->addRecord(interest->name, interest->getBloomfilter(), d - interest->getHopCounter());
+					bca->InterestReceived(interest);
+				}
+				else
+				{
+					this->sendInterest(interest, Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*o)))); //transmits only data over NetDevice
+				}
+			}
+		}
 
-			static std::string* name2=&name_value; //std::cout<<"------------name2: "<<*name2<<std::endl;
-			Ptr<CCN_Name> name=text->giveText(name2);
-			name->name.erase(name->name.begin());
+		void CcnModule::sendInterest(ns3::Ptr<CCN_Interest> interest,ns3::Ptr<ns3::NetDevice> nd)
+		{
+			std::string payload=interest->getBloomfilter()->getstring()+stringForm(interest->getHopCounter())+interest->getName()+"i";
+			Ptr<Packet> p=Create<Packet>(reinterpret_cast<const uint8_t *>(&payload[0]),payload.length());
+			sendThroughDevice(p,nd);
+		}
 
-		    //ola ta onomata ksekinane me / alla den exoune / sto telos
+		void CcnModule::sendInterest(ns3::Ptr<CCN_Name> name)
+		{
+			Ptr<CCN_Interest> interest=CreateObject<CCN_Interest>(name,decideTtl());
+			ns3::Ptr<TrieNode> tn = this->FIB->prefix(*(name));
+			for(unsigned i=0;i<tn->re->receivers->size();i++)
+			{
+				Object* o=&(*(tn->re->receivers->at(i)));
+				Sender* bca= dynamic_cast<Sender*> (o);
+
+				if(bca!=0)//mporei auto poy zitame na to exei alli efarmogi pano apo ton idio kombo ,i kai emeis oi idioi
+				{
+					this->p_i_t->addRecord(interest->name, interest->getBloomfilter(), d - interest->getHopCounter());
+					bca->InterestReceived(interest);
+				}
+				else
+				{
+					this->sendInterest(interest, Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*o)))); //transmits only data over NetDevice
+				}
+			}
+		}
+
+		int CcnModule::decideTtl()
+		{
+			if(switchh==0)//switchh 0 means using a random value
+			{
+				this->rv->SetAttribute ("Min", DoubleValue (0));
+				this->rv->SetAttribute ("Max", DoubleValue (this->d));
+				return this->rv->GetInteger();
+			}
+			else
+			{
+				return this->d;
+			}
+		}
+
+		std::string CcnModule::stringForm(int hc)
+		{
+			if(hc>9)
+			{
+				return static_cast<ostringstream*>( &(ostringstream() << hc) )->str();
+			}
+			else
+			{
+				return "0"+static_cast<ostringstream*>( &(ostringstream() << hc) )->str();
+			}
+		}
+
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 			if(type=='i')
 			{
@@ -175,53 +311,7 @@ int CcnModule::dataCount=0;
 			}
 			else if(type=='d')
 			{
-				data++;
-				dataCount++;
 
-				if(hopc<0)
-				{
-					return true;
-				}
-
-				//mipos einai gia 'mena?
-				//--------------------------------------------
-				if(this->r!=0)
-				{
-					std::string value=dt.substr(pos+1,dt.length()-pos-2);
-					char* v=&value[0];
-					r->DataArrived(name,v,value.length());
-				}
-				//--------------------------------------------
-
-
-				//--------------------------------------------
-				if(hopc==0)//continue using PIT
-				{
-					if(p_i_t->check(name)==0)
-					{
-						//agnoeitai
-					//	std::cout<<"Packet ignored ,did not know what to do."<<std::endl;
-					}
-					else
-					{
-						Ptr<PTuple> pt=p_i_t->check(name);
-					//	if(pt->ttl==0) return true;
-
-						std::string value=dt.substr(pos+1,dt.length()-pos-2);
-
-						char* v=&value[0];
-
-						this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
-					}
-				}
-				else//continue using Bloom filters
-				{
-					std::string value=dt.substr(pos+1,dt.length()-pos-2);
-
-					char* v=&value[0];
-
-					this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
-				}
 				//--------------------------------------------
 		    }
 
@@ -255,26 +345,11 @@ int CcnModule::dataCount=0;
 				    this->rv->SetAttribute ("Max", DoubleValue (this->d));
 				    int inthopc=this->rv->GetInteger();
 
-				    if(inthopc>9)
-				    {
-				    	hopc=static_cast<ostringstream*>( &(ostringstream() << inthopc) )->str();
-				    }
-				    else
-				    {
-				    	hopc="0"+static_cast<ostringstream*>( &(ostringstream() << inthopc) )->str();
-				    }
+				    stringForm(inthopc);
 				}
-				else//switchh 1 means using the maximium value ,d
-				{
-					if(this->d>9)
-					{
-						hopc=static_cast<ostringstream*>( &(ostringstream() << this->d) )->str();
-					}
-					else
-					{
-						hopc="0"+static_cast<ostringstream*>( &(ostringstream() << this->d) )->str();
-					}
-				}
+				else
+					stringForm(this->d);
+
 			}
 			else
 			{
@@ -517,34 +592,6 @@ int CcnModule::dataCount=0;
 			return result;
 		}
 
-		ns3::Ptr<Bloomfilter> CcnModule::add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
-		{
-	        if(f->length!=s->length)
-			{
-			     return 0;
-			}
-
-			bool* result=new bool [f->length];
-
-			for(int i=0;i<f->length;i++)
-			{
-			     if(f->filter[i]==1&&s->filter[i]==1)
-			     {
-			         result[i]=1;
-			     }
-			     else
-			     {
-			         result[i]=0;
-			     }
-			}
-
-			/*std::cout<<"--------------------------------------------------------------------"<<endl;
-			std::cout<<"adding "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
-			std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
-			std::cout<<"--------------------------------------------------------------------"<<endl;*/
-
-			return CreateObject<Bloomfilter>(f->length,result);
-		}
 
 		bool CcnModule::equals(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
 		{
@@ -568,49 +615,4 @@ int CcnModule::dataCount=0;
 //			std::cout<<"--------------------------------------------------------------------"<<endl;
 
 			return true;
-		}
-
-		ns3::Ptr<Bloomfilter> CcnModule::orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s)
-		{
-			if(f==0)
-			{
-				 std::cout<<"orbf: f is null"<<std::endl;
-			}
-			else if(s==0)
-			{
-				 std::cout<<"orbf: s is null"<<std::endl;
-			}
-
-
-			if(f->length!=s->length)
-			{
-				 std::cout<<"orbf: different sizes"<<std::endl;
-			     return 0;
-			}
-
-			bool* result=new bool [f->length];
-			for(int i=0;i<f->length;i++)
-			{
-				result[i]=0;
-			}
-
-			for(int i=0;i<f->length;i++)
-			{
-			     if(f->filter[i]==1||s->filter[i]==1)
-			     {
-			         result[i]=1;
-			     }
-			     else
-			     {
-			         result[i]=0;
-			     }
-			}
-
-		//	std::cout<<"OR between "<<f->getstring()<<" and "<<std::endl<<s->getstring()<<std::endl<<"gives "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
-
-			/*std::cout<<"--------------------------------------------------------------------"<<endl;
-			std::cout<<"or: "<<f->getstring()<<" and "<<s->getstring()<<std::endl;
-			std::cout<<"result: "<<CreateObject<Bloomfilter>(f->length,result)->getstring()<<std::endl;
-			std::cout<<"--------------------------------------------------------------------"<<endl;*/
-			return CreateObject<Bloomfilter>(f->length,result);
 		}

@@ -42,7 +42,8 @@
 		//			std::cout<<"node "<<this->ccnm->node<<" requesting "<<name4->getValue()<<std::endl;
 
 				askedfor++;
-				this->ccnm->sendInterest(name4,-1,0,0);
+				//this->ccnm->sendInterest(name4,-1,0,0);
+				this->ccnm->sendInterest(name4);
 			}
 		}
 

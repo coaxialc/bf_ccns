@@ -19,9 +19,7 @@ class PIT : public ns3::Object
 	void update(ns3::Ptr<CCN_Name> name,ns3::Ptr < PTuple >);
 	ns3::Ptr<PTuple> check(ns3::Ptr<CCN_Name> name);
 	void erase(ns3::Ptr<CCN_Name> name);
-
-
-
+	bool addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl);
 };
 
 
