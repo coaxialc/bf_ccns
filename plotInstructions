@@ -1,0 +1,38 @@
+#set term wxt 0
+#plot 'gs_data.txt' u 1:2 with linespoints title 'Group size - Data number'
+#set xlabel 'Group size'
+#set ylabel 'Data number'
+
+
+#set term wxt 1
+#plot 'gs_interests.txt' u 1:2 with linespoints title 'Group size - Interest number'
+#set xlabel 'Group size'
+#set ylabel 'Interest number'
+
+
+#set term wxt 2
+#plot 'gs_avgpit.txt' u 1:2 with linespoints title 'Group size - Average pit size'
+#set xlabel 'Group size'
+#set ylabel 'Average pit size'
+
+set term png
+set output "Group size - Data number.png"
+set xlabel 'Group size'
+set ylabel 'Data number'
+plot 'gs_data.txt' u 1:2 with linespoints title 'Group size - Data number'
+
+
+set term png
+set output "Group size - Interest number.png"
+set xlabel 'Group size'
+set ylabel 'Interest number'
+plot 'gs_interests.txt' u 1:2 with linespoints title 'Group size - Interest number'
+
+
+set term png
+set output "Group size - Average pit size.png"
+set xlabel 'Group size'
+set ylabel 'Average pit size'
+plot 'gs_avgpit.txt' u 1:2 with linespoints title 'Group size - Average pit size'
+
+
