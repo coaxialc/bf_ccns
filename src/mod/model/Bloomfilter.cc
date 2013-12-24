@@ -168,10 +168,10 @@ void Bloomfilter::OR(ns3::Ptr<Bloomfilter> f)
 	{
 		 std::cout<<"orbf: f is null"<<std::endl;
 	}
-	else if(s==0)
+	/*else if(this->filter==0)
 	{
 		 std::cout<<"orbf: s is null"<<std::endl;
-	}
+	}*/
 
 
 	if(f->length!=this->length)

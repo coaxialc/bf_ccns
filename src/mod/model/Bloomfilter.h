@@ -19,7 +19,7 @@ class Bloomfilter : public ns3::Object
 	int length;
 
 	void OR(ns3::Ptr<Bloomfilter> bf);
-	Ptr<Bloomfilter> AND(ns3::Ptr<Bloomfilter> bf);
+	ns3::Ptr<Bloomfilter> AND(ns3::Ptr<Bloomfilter> bf);
 };
 
 #endif

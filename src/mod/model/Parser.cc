@@ -34,7 +34,7 @@ using namespace ns3;
 
 
 			std::string line;//std::cout<<this->filename<<std::endl;
-			f.open(("/home/Coaxial/bf_workspace/ns-3-dev/src/mod/model/"+this->filename).c_str());
+			f.open(("/home/Coaxial/bf_workspace/ns-3-dev1/src/mod/model/"+this->filename).c_str());
 
 			int megethos=0;
 			if(f.is_open())
@@ -62,7 +62,7 @@ using namespace ns3;
 
 			std::string line2;
 
-			f.open(("/home/Coaxial/bf_workspace/ns-3-dev/src/mod/model/"+this->filename).c_str());
+			f.open(("/home/Coaxial/bf_workspace/ns-3-dev1/src/mod/model/"+this->filename).c_str());
 			if(f.is_open())
 			{
 				while(getline(f,line2))

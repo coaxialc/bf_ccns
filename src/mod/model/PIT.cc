@@ -70,7 +70,7 @@ bool operator<(const ns3::Ptr<CCN_Name>& f,const ns3::Ptr<CCN_Name>& s)
 	return false;
 }
 
-bool PIT::addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl)
+/*bool PIT::addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl)
 {
 	Ptr<PTuple> tuple=this->check(name);
 
@@ -87,5 +87,5 @@ bool PIT::addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl)
 		this->update(name,newTuple);
 		return false;
 	}
-}
+}*/
 

@@ -14,10 +14,10 @@ Ptr<Bloomfilter> CCN_Interest::getBloomfilter()
 	return this->bf;
 }
 
-CCN_Interest::CCN_Interest(ns3::Ptr<CCN_Name> name,int ttl)
+CCN_Interest::CCN_Interest(ns3::Ptr<CCN_Name> name,int ttl,int length)
 {
 	this->name=name;
-	bf=CreateObject<Bloomfilter>();
+	bf=CreateObject<Bloomfilter>(length);
 	hc=ttl;
 }
 
@@ -31,7 +31,7 @@ Ptr<CCN_Name> CCN_Interest::getName()
 	return this->name;
 }
 
-CCN_Interest::CCN_Interest(ns3::Ptr<ns3::Packet> p,int filterLength)
+CCN_Interest::CCN_Interest(ns3::Ptr<const ns3::Packet> p,int filterLength)
 {
 	uint8_t* b2=new uint8_t[p->GetSize()];
 	p->CopyData(b2,p->GetSize());
@@ -61,6 +61,30 @@ CCN_Interest::CCN_Interest(ns3::Ptr<ns3::Packet> p,int filterLength)
 	this->name=Text::getPtr()->giveText(name2);
 	(this->name)->name.erase(name->name.begin());
 	//ola ta onomata ksekinane me / alla den exoune / sto telos
+}
+
+/*void CCN_Interest::resetHC()
+{
+	this->hc=;
+}*/
+
+ns3::Ptr<ns3::Packet> CCN_Interest::serializeToPacket()
+{
+	std::string payload=bf->getstring()+stringForm(hc)+name->getValue()+"i";
+	ns3::Ptr<ns3::Packet> p=Create<ns3::Packet>(reinterpret_cast<const uint8_t *>(&payload[0]),payload.length());
+	return p;
+}
+
+std::string CCN_Interest::stringForm(int hc)
+{
+	if(hc>9)
+	{
+		return static_cast<ostringstream*>( &(ostringstream() << hc) )->str();
+	}
+	else
+	{
+		return "0"+static_cast<ostringstream*>( &(ostringstream() << hc) )->str();
+	}
 }
 
 CCN_Interest::~CCN_Interest()

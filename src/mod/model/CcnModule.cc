@@ -54,7 +54,7 @@ int CcnModule::dataCount=0;
 			dtl=new std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >();*/
 
 			//zero out apps to avoid having a Receiver or a Sender app next time if you don't need it
-			s=0;
+			//s=0;
 			r=0;
 		}
 
@@ -73,35 +73,40 @@ int CcnModule::dataCount=0;
 
 			for(unsigned i=0;i<n->GetNDevices();i++)
 			{
-				n->GetDevice(i)->SetReceiveCallback(MakeCallback(&CcnModule::receiveabc,this));
+				n->GetDevice(i)->SetReceiveCallback(MakeCallback(&CcnModule::handlePacket,this));
 			}
 		}
 
-		void CcnModule::sendThroughDevice(Ptr<Packet> p,Ptr<NetDevice> nd)
+		void CcnModule::sendThroughDevice(Ptr<const Packet> p,Ptr<NetDevice> nd)
 		{
+			uint8_t* b=new uint8_t[p->GetSize()];
+			p->CopyData(b,p->GetSize());
+
+			Ptr<Packet> p2=Create<Packet>(b,p->GetSize());
+
 			Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
 
-				if(nd->GetChannel()->GetDevice(0)==nd)
-				{
-					nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
-				}
-				else
-				{
-					nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
-				}
+			if(nd->GetChannel()->GetDevice(0)==nd)
+			{
+				nd->Send(p2,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
+			}
+			else
+			{
+				nd->Send(p2,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+			}
 
-				if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
-				if((pd->GetQueue()->GetTotalDroppedPackets()!=0)) std::cout<<"packets dropped"<<std::endl;
+			if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
+			if((pd->GetQueue()->GetTotalDroppedPackets()!=0)) std::cout<<"packets dropped"<<std::endl;
 		}
 
-		bool CcnModule::handlePacket(Ptr<NetDevice> nd,Ptr<const Packet> p,uint16_t a,const Address& ad)
+		bool CcnModule::handlePacket(Ptr<NetDevice> nd,Ptr< const Packet> p,uint16_t a,const Address& ad)
 		{
 			char type = extract_packet_type(p);
-			if (type == "i")
+			if (type == 'i')
 			{
 				handleIncomingInterest(p, nd);
 			}
-			else if (type == "d")
+			else if (type == 'd')
 			{
 				handleIncomingData(p, nd);
 			}
@@ -109,7 +114,7 @@ int CcnModule::dataCount=0;
 			return true;
 		}
 		
-		char CcnModule::extract_packet_type(Ptr<Packet> p)
+		char CcnModule::extract_packet_type(Ptr<const Packet> p)
 		{
 			uint8_t* b2=new uint8_t[p->GetSize()];
 			p->CopyData(b2,p->GetSize());
@@ -117,86 +122,16 @@ int CcnModule::dataCount=0;
 			return ((char)(b2[p->GetSize()-1]));
 		}
 
-		void CcnModule::handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd)
-		{
-			data++;
-			dataCount++;
-
-			Ptr<CCN_Data> data=CreateObject<CCN_Data>(p);
-			if(data->getHopCounter()<0) break;
-
-			//mipos einai gia 'mena?
-			//--------------------------------------------
-			ns3::Ptr<TrieNode> tn=FIB->prefix(*(data->getName()));
-			for(unsigned i=0;i<tn->re->receivers->size();i++)
-			{
-				Object* o=&(*(tn->re->receivers->at(i)));
-				Sender* bca= dynamic_cast<Sender*> (o);
-
-				if(bca!=0&&bca==)
-			}
-			if(this->r!=0)
-			{
-				std::string value=dt.substr(pos+1,dt.length()-pos-2);
-				char* v=&value[0];
-				r->DataArrived(name,v,value.length());
-			}
-			//--------------------------------------------
-
-
-			//--------------------------------------------
-			if(hopc==0)//continue using PIT
-			{
-				if(p_i_t->check(name)==0)
-				{
-					//agnoeitai
-				//	std::cout<<"Packet ignored ,did not know what to do."<<std::endl;
-				}
-				else
-				{
-					Ptr<PTuple> pt=p_i_t->check(name);
-				//	if(pt->ttl==0) return true;
-
-					std::string value=dt.substr(pos+1,dt.length()-pos-2);
-
-					char* v=&value[0];
-
-					this->sendData(name,v,value.length(),pt->bf,pt->ttl,nd);//exluding a netdevice
-				}
-			}
-			else//continue using Bloom filters
-			{
-				std::string value=dt.substr(pos+1,dt.length()-pos-2);
-
-				char* v=&value[0];
-
-				this->sendData(name,v,value.length(),filter,hopc-1,nd);//excluding a netdevice
-			}
-		}
-
 		void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd)
 		{
-			Ptr<CCN_Interest> interest = CreateObject<CCN_Interest>(p);
+			Ptr<CCN_Interest> interest = CreateObject<CCN_Interest>(p,this->length);
 			interest->decreaseHopCounter();
-			interest->getBloomfilter()->OR(Ptr<Bloomfilter>(dtl->find(nd)));
-			
-			Ptr<PTuple> tuple=this->p_i_t->check(interest->name);
-			if (tuple!=0)
-			{
-				tuple->bf=interest->getBloomfilter();
-				tuple->ttl=interest->getHopCounter();
-			}
-			else if (interest->getHopCounter() == 0)
-			{
-				existing_record_found = this->p_i_t->addRecord(interest->name, interest->getBF(), d - interest->hopCounter()+1)
-				if (existing_record_found)
-				{
-					//aggregate interest, do not forward
-					return;
-				}
-			}
-			
-			ns3::Ptr<TrieNode> tn = this->FIB->prefix(*(interest->name));
+			interest->getBloomfilter()->OR(this->dtl->find(nd)->second); //update BF in interest packet
+
+			//perform fib lookup
+			//pair<Ptr<NetDevice>, Prt<LocalApp> fib_lookup
+			Ptr<TrieNode> tn= this->FIB->prefix(*(interest->getName()));
+
 			for(unsigned i=0;i<tn->re->receivers->size();i++)
 			{
 				Object* o=&(*(tn->re->receivers->at(i)));
@@ -204,27 +139,178 @@ int CcnModule::dataCount=0;
 
 				if(bca!=0)
 				{
-					this->p_i_t->addRecord(interest->name, interest->getBloomfilter(), d - interest->getHopCounter());
-					bca->InterestReceived(interest);
+				//	this->p_i_t->addRecord(interest->getName(), interest->getBloomfilter(), d - interest->getHopCounter());
+
+					Ptr<PTuple> pt=p_i_t->check(interest->getName());
+					if(pt!=0)
+					{
+						pt->bf->OR(interest->getBloomfilter());
+						if(interest->getHopCounter()>pt->ttl)
+						{
+							pt->ttl=interest->getHopCounter();
+						}
+					}
+					else
+					{
+						Ptr<PTuple> pt2=CreateObject<PTuple>(interest->getBloomfilter(),interest->getHopCounter());
+						p_i_t->update(interest->getName(),pt2);
+					}
+
+					//bca->InterestReceived(interest);
+					//this is ns3 specific, we 'll discuss why it needs to be done this way
+					//ns3_schedule_event(localApp->handleInterest(interest))
+					bca->InterestReceived(interest->getName());
+
+					break;//we are done, no more Interest forwarding
 				}
-				else
+				/*else
 				{
 					this->sendInterest(interest, Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*o)))); //transmits only data over NetDevice
+				}*/
+
+				Ptr<PTuple> pt=p_i_t->check(interest->getName());
+				if(pt!=0)//we already have the Interest in the PIT
+				{
+					interest->getBloomfilter()->OR(pt->bf);
+					pt->bf=interest->getBloomfilter();
+					if(interest->getHopCounter()>pt->ttl)
+						{
+						 pt->ttl=interest->getHopCounter();
+						}
+					// aggregate interest, no further forwarding
+					break;
+				}
+			}
+
+			if (interest->getHopCounter() == 0)
+			{
+				//Interest must be tracked because HC is 0
+				this->p_i_t->update(interest->getName(),CreateObject<PTuple>( interest->getBloomfilter(), d - interest->getHopCounter()));
+
+				//reset bf and HC in packet
+				interest->setTtl(this->d);
+				interest->getBloomfilter()=CreateObject<Bloomfilter>(this->length);
+			}
+
+			for(unsigned i=0;i<tn->re->receivers->size();i++)
+			{
+				Object* o=&(*(tn->re->receivers->at(i)));
+				Sender* bca= dynamic_cast<Sender*> (o);
+
+				if(bca==0)
+				{
+					Ptr<Packet> packet = interest->serializeToPacket();
+					sendThroughDevice(p,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(tn->re->receivers->at(i))))));
+				}
+			}
+		}
+
+		void CcnModule::handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd)
+		{
+			Ptr<CCN_Data> data = ns3::CreateObject<CCN_Data>(p,this->length);
+			data->decreaseHopCounter();
+
+			//always check PIT
+			ns3::Ptr<PTuple> pt = this->p_i_t->check(data->getName());
+
+			/* pit_lookup is a structure/class/whatever that contains:
+			 * 1. Ptr<Bloomfilter> and ttl for further forwarding the data packet
+			 * 2. set<Ptr<LocalApp> > for apps in this node that have requested this data packet
+			 */
+
+			//watch this carefully, we 'll discuss this closely on Tuesday
+			if (pt != 0)//interest has been tracked at PIT
+			{
+				//give data to any local app
+				std::vector < ns3::Ptr < Receiver > >* lr = pt->r;
+
+				for(unsigned i=0;i<lr->size();i++)
+				{
+					ns3::Ptr<Receiver> l = lr->at(i);
+					//ns3 specific, I 'll explain
+				//	ns3_schedule_event(l->handleDataPacket(data.name, data.buffer))
+					l->DataArrived(data->getName(),reinterpret_cast<char*>(data->getData()),data->getLength());
+				}
+
+				ns3::Ptr<Bloomfilter> bf = pt->bf;
+				int ttl = pt->ttl;
+				if (data->getHopCounter() == 0)
+				{
+					//replace bf and ttl in packet
+					data->setBloomfilter(bf);
+					data->setTtl(ttl);
+				}
+				else
+				{ //THIS IS TRICKY, add (OR) bf and update ttl, NOT replace, we 'll discuss why this needs to be done
+					data->getBloomfilter()->OR(bf);
+
+					if(data->getHopCounter()>ttl)
+					{
+						data->setTtl(data->getHopCounter());
+					}
+					else
+					{
+						data->setTtl(ttl);
+					}
+				}
+
+				if (data->getHopCounter() != 0)
+				{
+					sendDataLow(data->getBloomfilter(), data, nd);
+				}
+			}
+		}
+
+		void CcnModule::sendDataLow(ns3::Ptr<Bloomfilter> bf,ns3::Ptr<CCN_Data> data ,ns3::Ptr<ns3::NetDevice> excluded)
+		{
+			for(unsigned i=0;i<this->n->GetNDevices();i++)
+			{
+				ns3::Ptr<Packet> p=data->serializeToPacket();
+				if(this->n->GetDevice(i)!=excluded&&equals(((dtl->find(this->n->GetDevice(i))->second)->AND(bf)),(dtl->find(this->n->GetDevice(i))->second)))
+				{
+					ns3::Ptr<NetDevice> nd=this->n->GetDevice(i);
+					ns3::Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();
+
+					if(nd->GetChannel()->GetDevice(0)==nd)
+					{
+						nd->Send(p,nd->GetChannel()->GetDevice(1)->GetAddress(),0x88DD);
+						if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
+						if((pd->GetQueue()->GetTotalDroppedPackets()!=0)) std::cout<<"packets dropped"<<std::endl;
+					}
+					else
+					{
+						nd->Send(p,nd->GetChannel()->GetDevice(0)->GetAddress(),0x88DD);
+						if((pd->GetQueue()->GetTotalDroppedBytes()!=0)) std::cout<<"bytes dropped"<<std::endl;
+						if((pd->GetQueue()->GetTotalDroppedPackets()!=0)) std::cout<<"packets dropped"<<std::endl;
+					}
 				}
 			}
 		}
 
 		void CcnModule::sendInterest(ns3::Ptr<CCN_Interest> interest,ns3::Ptr<ns3::NetDevice> nd)
 		{
-			std::string payload=interest->getBloomfilter()->getstring()+stringForm(interest->getHopCounter())+interest->getName()+"i";
+			std::string payload=interest->getBloomfilter()->getstring()+stringForm(interest->getHopCounter())+interest->getName()->getValue()+"i";
 			Ptr<Packet> p=Create<Packet>(reinterpret_cast<const uint8_t *>(&payload[0]),payload.length());
 			sendThroughDevice(p,nd);
 		}
 
 		void CcnModule::sendInterest(ns3::Ptr<CCN_Name> name)
 		{
-			Ptr<CCN_Interest> interest=CreateObject<CCN_Interest>(name,decideTtl());
+			Ptr<CCN_Interest> interest=CreateObject<CCN_Interest>(name,decideTtl(),this->length);
 			ns3::Ptr<TrieNode> tn = this->FIB->prefix(*(name));
+
+			Ptr<PTuple> pt=p_i_t->check(name);
+			if(pt!=0)
+			{
+				pt->r->push_back(r);
+			}
+			else
+			{
+				Ptr<PTuple> pt2=CreateObject<PTuple>(CreateObject<Bloomfilter>(this->length),0);
+				pt2->r->push_back(r);
+				p_i_t->update(name,pt2);
+			}
+
 			for(unsigned i=0;i<tn->re->receivers->size();i++)
 			{
 				Object* o=&(*(tn->re->receivers->at(i)));
@@ -232,8 +318,8 @@ int CcnModule::dataCount=0;
 
 				if(bca!=0)//mporei auto poy zitame na to exei alli efarmogi pano apo ton idio kombo ,i kai emeis oi idioi
 				{
-					this->p_i_t->addRecord(interest->name, interest->getBloomfilter(), d - interest->getHopCounter());
-					bca->InterestReceived(interest);
+					//this->p_i_t->addRecord(interest->getName(), interest->getBloomfilter(), d - interest->getHopCounter());
+					bca->InterestReceived(interest->getName());
 				}
 				else
 				{
@@ -268,57 +354,7 @@ int CcnModule::dataCount=0;
 			}
 		}
 
-			
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			if(type=='i')
-			{
-				interestCount++;
-				Ptr<PTuple> rec;
-				if(hopc==0)
-				{
-					rec=p_i_t->check(name);
-					if(rec==0)
-					{
-						p_i_t->update(name,CreateObject<PTuple>(orbf(filter,dtl->find(nd)->second),this->d));//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
-
-						sendInterest(name,this->d,0,nd);//eite paei gia proothisi eite gia anebasma ,thelei megisto hc
-					}
-					else
-					{
-						Ptr<PTuple> tuple=p_i_t->check(name);
-						p_i_t->erase(name);//an oso einai sbismeno ,tote thelei na apantisei o allos?
-					//	std::cout<<"node "<<this->node<<"after erase bf is: "<<tuple->bf->getstring()<<" and ttl is: "<<tuple->ttl<<std::endl;
-						p_i_t->update(name,CreateObject<PTuple>( orbf(tuple->bf,(orbf(filter,dtl->find(nd)->second))) ,(this->d)));//eite paei gia proothisei eite gia anebasma ,thelei megisto hc
-					}
-				}
-				else
-				{
-					this->sendInterest(name , hopc-1 , orbf(filter,dtl->find(nd)->second),nd);//an telika einai gia anebasma ,tha to ayksisoume ksana ,aplos boleuei na einai -1 pros to paron ,-1 tha xreiastei an einai gia proothisi
-				}
-			}
-			else if(type=='d')
-			{
-
-				//--------------------------------------------
-		    }
-
-			return true;
-		}
-
-		void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf,ns3::Ptr<ns3::NetDevice> nd)
+		/*void CcnModule::sendInterest(Ptr<CCN_Name> name,int hcounter,ns3::Ptr < Bloomfilter > bf,ns3::Ptr<ns3::NetDevice> nd)
 		{
 			Ptr<Bloomfilter> rec2;
 			if(bf==0)
@@ -437,7 +473,7 @@ int CcnModule::dataCount=0;
 					sendThroughDevice(pa,Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(receivers->receivers->at(i))))));
 				}
 			}
-		}
+		}*/
 
 		void CcnModule::sendData(ns3::Ptr<CCN_Name> name,char* buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,Ptr<NetDevice> excluded)
 		{
@@ -476,7 +512,7 @@ int CcnModule::dataCount=0;
 			for(unsigned i=0;i<this->n->GetNDevices();i++)
 			{
 				Ptr<Packet> p=Create<Packet>(reinterpret_cast<const uint8_t *>(&temp2[0]),this->length+hopc.length()+1+n.length()+bufflen);
-				if(this->n->GetDevice(i)!=excluded&&equals(add(dtl->find(this->n->GetDevice(i))->second,rec),(dtl->find(this->n->GetDevice(i))->second)))
+				if(this->n->GetDevice(i)!=excluded&&equals(((dtl->find(this->n->GetDevice(i))->second)->AND(rec)),(dtl->find(this->n->GetDevice(i))->second)))
 				{
 					Ptr<NetDevice> nd=this->n->GetDevice(i);
 					Ptr<PointToPointNetDevice> pd = nd->GetObject<PointToPointNetDevice> ();

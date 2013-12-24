@@ -8,7 +8,7 @@ function experiment
 	
 	while true; do
         
-	  ./waf --run " ${1} $group_size $seed 128 4 1"
+	  ./waf --run " ${1} $group_size $seed 128 4 0"
 	
 	  if [ $? = 1 ]; then
 	    break

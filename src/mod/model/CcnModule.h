@@ -10,13 +10,17 @@
 #include "ns3/PIT.h"
 #include "ns3/md5.h"
 #include "ns3/sha1.h"
+#include "ns3/CCN_Interest.h"
 #include <bitset>
+#include "ns3/CCN_Data.h"
 
 class Trie;
 class Sender;
 class Receiver;
 class Bloomfilter;
 class PIT;
+class CCN_Data;
+class CCN_Interest;
 
 	class CcnModule  : public ns3::Object
 	{
@@ -48,7 +52,7 @@ class PIT;
 
 		long size(ns3::Ptr<ns3::Packet> p);
 
-		char extract_packet_type(Ptr<Packet> p);
+		char extract_packet_type(ns3::Ptr<const ns3::Packet> p);
 
 		std::vector < ns3::Ptr<CCN_Name> >* DATA;
 
@@ -66,17 +70,17 @@ class PIT;
 
 
 	//	ns3::Ptr<Sender> s;
-	//	ns3::Ptr<Receiver> r;
+		ns3::Ptr<Receiver> r;
 
 		std::map < int, ns3::Ptr < CcnModule > > map;
 
+		void sendDataLow(ns3::Ptr<Bloomfilter> bf,ns3::Ptr<CCN_Data> data ,ns3::Ptr<ns3::NetDevice> nd);
 
-
-		ns3::Ptr<Bloomfilter> add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+		//ns3::Ptr<Bloomfilter> add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
 
 		bool equals(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
 
-		void sendThroughDevice(ns3::Ptr<ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
+		void sendThroughDevice(ns3::Ptr<const ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
 
 		int decideTtl();
 
@@ -87,14 +91,14 @@ class PIT;
 
 		void sendData(ns3::Ptr<CCN_Name>,char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,ns3::Ptr<ns3::NetDevice> excluded);
 
-		void handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd);
+		void handleIncomingData(ns3::Ptr<const ns3::Packet> p, ns3::Ptr<ns3::NetDevice> nd);
 
-		void handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd);
+		void handleIncomingInterest(ns3::Ptr<const ns3::Packet> p, ns3::Ptr<ns3::NetDevice> nd);
 
 		/*optional*/
 		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);
 
-		ns3::Ptr<Bloomfilter> orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+	//	ns3::Ptr<Bloomfilter> orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
 
 		void setNode(ns3::Ptr<ns3::Node>);
 
@@ -104,7 +108,7 @@ class PIT;
 
 		//void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<Bloomfilter> bf,ns3::Ptr<ns3::NetDevice> excluded,std::string calledby);
 
-		bool handlePacket(ns3::Ptr<ns3::NetDevice> nd,ns3::Ptr<const ns3::Packet> p,uint16_t a,const ns3::Address& ad);
+		bool handlePacket(ns3::Ptr<ns3::NetDevice> nd,ns3::Ptr< const ns3::Packet> p,uint16_t a,const ns3::Address& ad);
 		
 		private:
 		void sendInterest(ns3::Ptr<CCN_Interest> insterest,ns3::Ptr < ns3::NetDevice > nd);
