@@ -104,10 +104,13 @@ int CcnModule::dataCount=0;
 			char type = extract_packet_type(p);
 			if (type == 'i')
 			{
+				interestCount++;
 				handleIncomingInterest(p, nd);
 			}
 			else if (type == 'd')
 			{
+				dataCount++;
+				data++;
 				handleIncomingData(p, nd);
 			}
 
@@ -230,6 +233,13 @@ int CcnModule::dataCount=0;
 					//ns3 specific, I 'll explain
 				//	ns3_schedule_event(l->handleDataPacket(data.name, data.buffer))
 					l->DataArrived(data->getName(),reinterpret_cast<char*>(data->getData()),data->getLength());
+					for(unsigned i=0;i<pt->r->size();i++)
+					{
+						if(pt->r->at(i)==l)
+						{
+							pt->r->erase(pt->r->begin()+i);
+						}
+					}
 				}
 
 				ns3::Ptr<Bloomfilter> bf = pt->bf;

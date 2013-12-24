@@ -101,7 +101,7 @@ CCN_Data::~CCN_Data()
 {
 	bf=0;
 	name=0;
-	delete data;
+	//delete data;
 }
 
 int CCN_Data::getHopCounter()

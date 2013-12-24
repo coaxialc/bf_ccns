@@ -48,7 +48,7 @@ int main(int argc ,char *argv[])
 
 	//std::string temp="topology.txt";
 	Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(std::atoi(argv[3]),argv[1],std::atoi(argv[2]),std::atoi(argv[4]),std::atoi(argv[5]),std::atoi(argv[6]));
-//	Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(129,"1221.txt",12,128,4,0);
+	//Ptr<BootstrappingHelper> bh=CreateObject<BootstrappingHelper>(129,"1221.txt",12,128,4,0);
 
 	bh->parseTopology();
 
