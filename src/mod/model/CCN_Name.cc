@@ -1,28 +1,175 @@
+#include "CCN_Name.h"
+#include <sstream>
+#include <iostream>
 
-#include "ns3/CCN_Name.h"
+using std::stringstream;
+using std::cout;
+using std::endl;
 
-CCN_Name::CCN_Name(std::vector< std::string* > name)
-{
-	this->name=name;
+namespace ns3 {
+
+//operators
+bool operator< (const Ptr<PtrString> lhs, const Ptr<PtrString> rhs){
+	return lhs->getContent() < rhs->getContent();
 }
 
-CCN_Name::~CCN_Name()
-{
-
+bool operator<= (const Ptr<PtrString> lhs, const Ptr<PtrString> rhs){
+	return lhs->getContent() <= rhs->getContent();
 }
 
-std::string CCN_Name::getValue()
-{
-	std::string result="";
+bool operator> (const Ptr<PtrString> lhs, const Ptr<PtrString> rhs){
+	return lhs->getContent() > rhs->getContent();
+}
 
-	for(unsigned i=0;i<name.size();i++)
-	{
-		result=result+"/"+*(name.at(i));
+bool operator>= (const Ptr<PtrString> lhs, const Ptr<PtrString> rhs){
+	return lhs->getContent() >= rhs->getContent();
+}
+
+bool operator== (const PtrString &lhs, const PtrString &rhs){
+	return lhs.getContent() == rhs.getContent();
+}
+
+bool operator!= (const PtrString &lhs, const PtrString &rhs){
+	return lhs.getContent() != rhs.getContent();
+}
+
+map<string, Ptr<PtrString> > CCN_Name::cachedTokens = map<string, Ptr<PtrString> >();
+
+Ptr<PtrString> CCN_Name::getTokenPtr(string &str){
+	Ptr<PtrString> ptr = CCN_Name::cachedTokens[str];
+	if (ptr == 0){
+		ptr = CreateObject<PtrString>(str);
+		CCN_Name::cachedTokens[str] = ptr;
 	}
 
-	result=result+"*";
+	return ptr;
+}
 
-	//std::cout<<"CCN_Name.getValue: "<<result<<std::endl;
+CCN_Name::CCN_Name(vector<string>& names) {
+	for(uint32_t i=0; i<names.size(); i++){
+		Ptr<PtrString> ptrString = CCN_Name::getTokenPtr(names[i]);
+		tokens.push_back(ptrString);
+	}
+}
 
-	return result;
+CCN_Name::~CCN_Name() {
+	tokens.clear();
+}
+
+vector<string> CCN_Name::getTokens() const{
+	vector<string> v;
+	for(uint32_t i=0; i<tokens.size(); i++){
+		v.push_back(tokens[i]->getContent());
+	}
+	return v;
+}
+
+void CCN_Name::DoDispose(void) {
+	tokens.clear();
+}
+
+string CCN_Name::toString() const{
+	stringstream sstream;
+	for (uint32_t i=0; i<tokens.size(); i++){
+		sstream << "/" << tokens[i]->getContent();
+	}
+	return sstream.str();
+}
+
+uint32_t CCN_Name::serializedSize() const {
+	uint32_t length = 0;
+	for (uint32_t i=0; i<tokens.size(); i++){
+		length += 1 + tokens[i]->getContentLength();
+	}
+	return sizeof(uint16_t) + length*sizeof(char);
+}
+
+uint32_t CCN_Name::serializeToBuffer(uint8_t *buffer) const {
+	string str = toString();
+	uint16_t length = str.length();
+	memcpy(buffer, &length, sizeof(uint16_t));
+	memcpy((void*)(buffer + sizeof(uint16_t)), (void*)str.c_str(), length*sizeof(char));
+
+	return sizeof(uint16_t) + length*sizeof(char);
+}
+
+vector<string> & split(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+    	elems.push_back(item);
+
+    }
+    return elems;
+}
+
+pair<Ptr<CCN_Name>, uint32_t> CCN_Name::deserializeFromBuffer(uint8_t *buffer){
+
+	uint16_t length = 0;
+	memcpy((void*)&length, buffer, sizeof(uint16_t));
+
+	char *str_buff = (char*)malloc(sizeof(char)*(length+1));
+	memcpy((void *)str_buff, (void*)(buffer + sizeof(uint16_t)), sizeof(char)*length);
+
+	//terminate with null
+	str_buff[length] = '\0';
+	//ignore starting '/'
+	char *starting_pointer = str_buff[0] == '/'? str_buff + sizeof(char): str_buff;
+	string str = string(starting_pointer);
+	free(str_buff);
+
+	vector<string> elems;
+	split(str, '/', elems);
+	Ptr<CCN_Name> name = CreateObject<CCN_Name>(elems);
+	uint32_t readBytes = sizeof(uint16_t) + sizeof(char)*length;
+
+	return pair<Ptr<CCN_Name>, uint32_t >(name, readBytes);
+}
+
+bool operator< (const Ptr<CCN_Name>& lhs, const Ptr<CCN_Name>& rhs){
+	if (lhs->size() < rhs->size()){
+		return true;
+	}else if (lhs->size() > rhs->size()){
+		return false;
+	}else{
+		for (uint32_t i=0; i<lhs->size(); i++){
+			string lstr = lhs->getToken(i)->getContent();
+			string rstr = rhs->getToken(i)->getContent();
+			int diff = lstr.compare(rstr);
+			if (diff < 0){
+				return true;
+			}else if (diff > 0){
+				return false;
+			}
+		}
+		return false;
+	}
+}
+
+bool operator== (const Ptr<CCN_Name>& lhs, const Ptr<CCN_Name>& rhs){
+	if (lhs->size() != rhs->size()){
+		return false;
+	}else{
+		for (uint32_t i=0; i<lhs->size(); i++){
+			if (lhs->getToken(i)->getContent().compare(rhs->getToken(i)->getContent()) != 0){
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
+bool operator!= (const Ptr<CCN_Name>& lhs, const Ptr<CCN_Name>& rhs){
+	if (lhs->size() != rhs->size()){
+		return true;
+	}else{
+		for (uint32_t i=0; i<lhs->size(); i++){
+			if (lhs->getToken(i)->getContent().compare(rhs->getToken(i)->getContent()) != 0){
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
 }

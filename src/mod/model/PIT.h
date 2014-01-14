@@ -1,27 +1,33 @@
 #ifndef PIT_H_
 #define PIT_H_
 
-
 #include <map>
-#include "ns3/CCN_Name.h"
+#include "CCN_Name.h"
 #include "PTuple.h"
-class PTuple;
-using namespace std;
+#include "local_app.h"
 
+using std::map;
+
+namespace ns3 {
+class PTuple;
 class Bloomfilter;
 
-class PIT : public ns3::Object
-{
-    public:
-	std::map < ns3::Ptr<CCN_Name> ,ns3::Ptr < PTuple > >* p;
+class PIT: public Object {
+public:
+
 	PIT();
 	~PIT();
-	void update(ns3::Ptr<CCN_Name> name,ns3::Ptr < PTuple >);
-	ns3::Ptr<PTuple> check(ns3::Ptr<CCN_Name> name);
-	void erase(ns3::Ptr<CCN_Name> name);
-	bool addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl);
+	virtual void DoDispose(void);
+
+	void update(Ptr<CCN_Name> name, Ptr<PTuple>);
+	Ptr<PTuple> check(Ptr<CCN_Name> name);
+	void erase(Ptr<CCN_Name> name);
+	uint32_t getSize();
+	bool addRecord(Ptr<CCN_Name>, Ptr<Bloomfilter>,  uint32_t);
+
+private:
+	map<Ptr<CCN_Name>, Ptr<PTuple> > table;
 };
-
-
+}
 
 #endif

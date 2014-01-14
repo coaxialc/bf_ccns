@@ -1,49 +1,62 @@
-#include "ns3/ResultPrinter.h"
+#include "ResultPrinter.h"
+
+#include <iostream>
+#include <sstream>
+
+using std::stringstream;
+using std::ofstream;
 
 using namespace ns3;
 
-ResultPrinter::ResultPrinter(std::vector < Ptr < CcnModule > > * module,int gs,int exp,ns3::Ptr<Sender> s)
-{
-	this->module=module;
+ResultPrinter::ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs,
+		uint32_t exp, Ptr<Sender> s,vector < Ptr < Receiver > > receiver) {
+	this->module = module;
 
-	std::cout<<"-----------------Interest and data count-----------------"<<std::endl;
+	std::cout << "-----------------Interest and data count-----------------"
+			<< std::endl;
 
-	std::cout<<CcnModule::interestCount<<" interests appeared."<<std::endl<<CcnModule::dataCount<<" data appeared."<<std::endl;
+	std::cout << CcnModule::RX_INTERESTS << " interests appeared." << std::endl
+			<< CcnModule::RX_DATA << " data appeared." << std::endl;
 
-	std::cout<<"-----------------Interest and data count-----------------"<<std::endl;
+	std::cout << "-----------------Interest and data count-----------------"
+			<< std::endl;
 
-	for(unsigned i=0;i<module->size();i++)
-		{
-			stringstream st;
-			st << gs;
+	for (uint32_t i = 0; i < module.size(); i++) {
+		stringstream st;
+		st << gs;
 
-			stringstream st2;
-			st2 << exp;
+		stringstream st2;
+		st2 << exp;
 
-			ofstream file;
+		ofstream file;
 
-			file.open (("./data_stats/gs-"+st.str()+"-experiment-"+st2.str()+".txt").c_str(),ios::app);
-			file<<"router "<<module->at(i)->node<<" data_count "<<module->at(i)->data<<std::endl;
-			file.close();
-		}
-
-	for(unsigned i=0;i<module->size();i++)
-	{
-		if(module->at(i)->r!=0)
-		{
-			//std::cout<<"receiver found"<<std::endl;
-			if(module->at(i)->r->returned!=module->at(i)->r->askedfor)
-			{
-				std::cout<<"A Receiver did not get everything it asked for!"<<std::endl;
-			}
-			std::cout<<"Receiver got "<<module->at(i)->r->returned<<".Asked for "<<module->at(i)->r->askedfor<<std::endl;
-		}
+		file.open(
+				("./data_stats/gs-" + st.str() + "-experiment-" + st2.str()
+						+ ".txt").c_str(), std::ios::app);
+		file << "router " << module.at(i)->getNodeId() << " data_count "
+				<< module.at(i)->getTXData() << std::endl;
+		file.close();
 	}
 
-	std::cout<<"Sender got "<<s->interests<<" interests."<<std::endl;
+	for (uint32_t i = 0; i < module.size(); i++) {
+
+			//std::cout<<"receiver found"<<std::endl;
+			if (receiver.at(i)->getReturned() != receiver.at(i)->getAskedFor()) {
+				std::cout << "A Receiver did not get everything it asked for!"
+						<< std::endl;
+			}
+			std::cout << "Receiver got " << receiver.at(i)->getReturned()
+					<< ".Asked for " << receiver.at(i)->getAskedFor()<< std::endl;
+
+	}
+
+	std::cout << "Sender got " << s->getInterests() << " interests." << std::endl;
 }
 
-ResultPrinter::~ResultPrinter()
-{
+ResultPrinter::~ResultPrinter() {
+
+}
+
+void ResultPrinter::DoDispose(void) {
 
 }

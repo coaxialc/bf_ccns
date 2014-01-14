@@ -8,24 +8,40 @@
 #ifndef PTUPLE_H_
 #define PTUPLE_H_
 
-
+#include <vector>
+#include "ns3/core-module.h"
 #include "ns3/Bloomfilter.h"
-#include "ns3/Receiver.h"
+#include "ns3/local_app.h"
 
-class Receiver;
+using std::vector;
+
+namespace ns3 {
+
+class LocalApp;
 class Bloomfilter;
-using namespace std;
 
+class PTuple : public Object {
+public:
+	PTuple(Ptr<Bloomfilter> bf, int ttl);
+	PTuple(Ptr<Bloomfilter> bf, int ttl, vector<Ptr<LocalApp> >*);
+	virtual ~PTuple();
+	virtual void DoDispose(void);
 
-class PTuple : public ns3::Object
-{
-	public:
-	ns3::Ptr<Bloomfilter> bf;
-	int ttl;
-	std::vector < ns3::Ptr < Receiver > >* r;
-	PTuple(ns3::Ptr<Bloomfilter> bf,int ttl);
-	~PTuple();
+	bool addLocalApp(Ptr<LocalApp> app);
+	bool removeLocalApp(Ptr<LocalApp>);
+
+	Ptr<Bloomfilter> getBF(){ return bf; }
+	uint32_t getTTL(){ return ttl;}
+	void setTTL(uint32_t _ttl){ ttl = _ttl;}
+	vector<Ptr<LocalApp> >& getLocalApps() {return r;}
+
+private:
+	Ptr<Bloomfilter> bf;
+	uint32_t ttl;
+	vector<Ptr<LocalApp> > r;
+
+	vector<Ptr<LocalApp> >::iterator find(Ptr<LocalApp>);
 };
 
-
+}
 #endif /* PTUPLE_H_ */

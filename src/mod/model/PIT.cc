@@ -1,91 +1,62 @@
+#include <map>
+#include "PIT.h"
 
-#include <ns3/PIT.h>
+using std::pair;
 
-using namespace std;
+namespace ns3 {
 
-PIT::PIT()
-{
-	this->p=new std::map < ns3::Ptr<CCN_Name> ,ns3::Ptr < PTuple > >();
+PIT::PIT() {
+	table = map<Ptr<CCN_Name>, Ptr<PTuple> >();
 }
 
-PIT::~PIT()
-{
-	delete p;
+PIT::~PIT() {
+	table.clear();
 }
 
-void PIT::update(ns3::Ptr<CCN_Name> name,ns3::Ptr < PTuple > re)
-{
-	//std::cout<<"mpainei sto pit to onoma:"<<name->getValue()<<std::endl;
-	const std::pair < ns3::Ptr< CCN_Name >, ns3::Ptr< PTuple > > pa (name,re);
-	this->p->insert(pa);
+void PIT::DoDispose(void) {
+	table.clear();
 }
 
-void PIT::erase(ns3::Ptr<CCN_Name> name)
-{
-	this->p->erase(name);
+void PIT::update(Ptr<CCN_Name> name, Ptr<PTuple> re) {
+	table[name] = re;
 }
 
-ns3::Ptr<PTuple> PIT::check(ns3::Ptr<CCN_Name> name)
-{
-	if(p->find(name)!=p->end())
-	{
-		return p->find(name)->second;
-	}
-	else
-	{
+void PIT::erase(Ptr<CCN_Name> name) {
+	table.erase(name);
+}
+
+Ptr<PTuple> PIT::check(Ptr<CCN_Name> name) {
+	map<Ptr<CCN_Name>, Ptr<PTuple> >::iterator find = table.find(name);
+	if (find != table.end()){
+		return find->second;
+	}else{
 		return 0;
 	}
-
-	return 0;
 }
 
+/*
+map<Ptr<CCN_Name>, Ptr<PTuple> > PIT::getTable() {
+	return table;
+}
+*/
 
-bool operator<(const ns3::Ptr<CCN_Name>& f,const ns3::Ptr<CCN_Name>& s)
-{
-	if(f->name.size()<s->name.size())
-	{
+uint32_t PIT::getSize() {
+	return table.size();
+}
+
+bool PIT::addRecord(Ptr<CCN_Name> name, Ptr<Bloomfilter> f, uint32_t ttl){
+	Ptr<PTuple> tuple = check(name);
+	if (tuple == 0){
+		tuple = CreateObject<PTuple>(f, ttl);
+		update(name, tuple);
 		return true;
-	}
-
-	if(f->name.size()>s->name.size())
-	{
+	}else{
+		tuple->getBF()->OR(f);
+		if (ttl > tuple->getTTL()){
+			tuple->setTTL(ttl);
+		}
 		return false;
 	}
-
-	if(f->name.size()==s->name.size())
-	{
-		for(unsigned i=0;i<f->name.size();i++)
-		{
-			if((f->name.at(i))<(s->name.at(i)))
-			{
-				return true;
-			}
-			else if((f->name.at(i))>(s->name.at(i)))
-			{
-				return false;
-			}
-		}
-	}
-
-	return false;
 }
 
-/*bool PIT::addRecord(ns3::Ptr<CCN_Name> name,ns3::Ptr<Bloomfilter> f,int ttl)
-{
-	Ptr<PTuple> tuple=this->check(name);
-
-	if (tuple!=0)
-	{
-		tuple->bf=f;
-		tuple->ttl=ttl;
-
-		return true;//existing record found
-	}
-	else
-	{
-		Ptr<PTuple> newTuple=CreateObject<PTuple>(f,ttl);
-		this->update(name,newTuple);
-		return false;
-	}
-}*/
-
+}

@@ -8,30 +8,29 @@
 #ifndef TRIE_H_
 #define TRIE_H_
 
-#include "ns3/TrieNode.h"
-#include "ns3/CcnModule.h"
-#include "ns3/Receivers.h"
+#include "TrieNode.h"
+#include "CCN_Name.h"
 
+namespace ns3 {
 
-	class Trie  : public ns3::Object
-	{
-		public:
-		Trie(ns3::Ptr<CcnModule> m);
+class Trie: public Object {
+public:
+	Trie();
+	~Trie();
+	virtual void DoDispose(void);
 
-		~Trie();
-		ns3::Ptr<TrieNode> r;
-		ns3::Ptr<CcnModule> m;
+	Ptr<TrieNode> longestPrefixMatch(Ptr<CCN_Name> name);
+	bool put(Ptr<CCN_Name> name, Ptr<NetDevice> device);
+	bool put(Ptr<CCN_Name> name, Ptr<LocalApp> localApp);
 
-		void put(CCN_Name name,ns3::Ptr<Receivers> re);
-		ns3::Ptr<TrieNode> prefix(CCN_Name name);
+	bool hasData();
 
-		std::vector < ns3::Ptr < TrieNode > > leaves;
+private:
+	Ptr<TrieNode> root;
+	Ptr<TrieNode> findNode(Ptr<CCN_Name>);
 
+};
 
-
-	};
-
-
-
+}
 
 #endif /* TRIE_H_ */

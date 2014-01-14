@@ -8,36 +8,49 @@
 #ifndef RECEIVER_H_
 #define RECEIVER_H_
 
-
+#include "ns3/core-module.h"
 #include "ns3/CcnModule.h"
-#include "ns3/CCN_Name.h"
-#include <string>
-#include <vector>
+#include "ns3/local_app.h"
 
+#include <set>
+
+using std::set;
+
+namespace ns3 {
 
 class CcnModule;
+class CCN_Name;
 
-class Receiver : public ns3::Application
-{
+class Receiver: public Application {
 
 public:
-	ns3::Ptr<CcnModule> ccnm;
-
-
-	static ns3::TypeId GetTypeId(void);
-	virtual ns3::TypeId GetInstanceTypeId (void) const;
-
-	Receiver(ns3::Ptr<CcnModule> ccnm);
+	Receiver(Ptr<CcnModule> ccnm);
 	~Receiver();
-	char* data;
-	int length;
-	ns3::Ptr<CCN_Name> dataName;
-	void SendInterest(ns3::Ptr<CCN_Name> n,int num);
-	int askedfor;
-	int returned;
-	//std::vector < ns3::Ptr<CCN_Name> >* d;
+	virtual void DoDispose(void);
 
-	virtual void DataArrived(ns3::Ptr<CCN_Name> data, char* buff, int bufflen);
+	static TypeId GetTypeId(void);
+	Ptr<CcnModule> getModule();
+	virtual TypeId GetInstanceTypeId(void) const;
+	uint32_t getAskedFor();
+	uint32_t getReturned();
+
+	void SendInterest(Ptr<CCN_Name>, uint32_t);
+
+private:
+	void handleInterest(Ptr<CCN_Name>);
+	void handleData(Ptr<CCN_Name>, uint8_t*, uint32_t);
+	void doSendInterest(Ptr<CCN_Name>);
+
+	Ptr<CcnModule> ccnm;
+	Ptr<LocalApp> localApp;
+
+	uint8_t* data;
+	uint32_t length;
+	Ptr<CCN_Name> dataName;
+	uint32_t askedfor;
+	set<Ptr<CCN_Name> > asked;
+	uint32_t returned;
+
 };
-
+}
 #endif

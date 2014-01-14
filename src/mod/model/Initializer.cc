@@ -1,15 +1,24 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-
-
 #include "ns3/Initializer.h"
+#include <sstream>
+#include <vector>
 
-using namespace ns3;
+#include "ns3/CcnModule.h"
 
-		Initializer::Initializer(std::vector < Ptr < CcnModule > >* module,std::vector< std::vector < int > >* connection,int dataOwner)
+using std::stringstream;
+using std::vector;
+using std::queue;
+
+namespace ns3
+{
+
+class CcnModule;
+
+		Initializer::Initializer(vector < Ptr < CcnModule > >* module,Ptr<Parser> parser,int dataOwner,uint32_t dataNum)
 		{
 			this->module=*module;
-			this->connection=connection;
+			this->parser=parser;
 			this->dataOwner=dataOwner;
+			this->dataNum=dataNum;
 		}
 
 		Initializer::~Initializer()
@@ -19,100 +28,84 @@ using namespace ns3;
 
 		void Initializer::initializeFIBs()
 		{
-		//	std::cout<<"-----------------BFS-----------------"<<std::endl;
+
 			unsigned i=this->dataOwner;
-			/*for(unsigned i=0;i<this->module.size();i++)
-			{*/
-			//	std::cout<<"Starting from node "<<i<<"."<<std::endl;
-				/*for(unsigned j=0;j<this->module.size();j++)
+
+
+				queue < Ptr < CcnModule > >* q=new queue < Ptr < CcnModule > >();
+				q->push(module.at(i));
+
+				visited.find(module.at(i))->second=true;
+
+				while(q->size()!=0)
 				{
-					module.at(j)->visited=false;
-				}*/
-
-				std::queue < Ptr < CcnModule > >* queue=new std::queue < Ptr < CcnModule > >();
-				queue->push(module.at(i));
-
-				module.at(i)->visited=true;
-
-				while(queue->size()!=0)
-				{
-					Ptr<CcnModule> handle=queue->front();
-					queue->pop();
+					Ptr<CcnModule> handle=q->front();
+					q->pop();
 
 					Ptr<CcnModule> c=0;
 					while((c=firstUnvisitedChild(handle))!=0)
 					{
-						c->visited=true;
+						visited.find(c)->second=true;
 
-						//std::cout<<"Updating FIB ,DATA size: "<<module.at(i)->DATA->size()<<std::endl;
-						for(unsigned k=0;k<module.at(i)->DATA->size();k++)
+
+						for(uint32_t k=0;k<this->dataNum;k++)
 						{
-							std::vector < Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
-							vec->push_back(ndfinder(handle->n,c->n,handle->node,c->node));
-							Ptr<Receivers> rec=CreateObject<Receivers>(vec);
-						//	std::cout<<"Updating FIB of node "<<c->node<<"."<<std::endl;
-							c->FIB->put(*(module.at(i)->DATA->at(k)),rec);
+							//std::vector < Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
+							//vec->push_back(ndfinder(handle->n,c->n,handle->node,c->node));
+							//Ptr<Receivers> rec=CreateObject<Receivers>(vec);
+
+							vector <string>* nameVector=new vector<string>();
+							nameVector->push_back("domain1");
+							nameVector->push_back("domain2");
+							nameVector->push_back("domain3");
+
+							stringstream sstream;
+							sstream << k;
+
+							nameVector->push_back(sstream.str());
+							Ptr<CCN_Name> name=CreateObject<CCN_Name>(*nameVector);
+
+							c->getFIB()->put(name,ndfinder(handle->getNode(),c->getNode(),handle->getNodeId(),c->getNodeId()));
+
+
+						//	c->FIB->put(*(module.at(i)->DATA->at(k)),rec);
 						}
 
-						//-----------------------------------------------------------------
-					/*	for(unsigned k=0;k<module.at(i)->DATA->size();k++)
-						{
-							std::cout<<"prefix "<<k<<": "<<std::endl;
-							std::cout<<module.at(i)->DATA->at(k)->getValue()<<std::endl;
-							Ptr<TrieNode> t=c->FIB->prefix(*(module.at(i)->DATA->at(k)));
-							if(t==0)
-							{
-								std::cout<<"not ok"<<std::endl;
-							}
-							else
-							{
-								std::cout<<"ok"<<std::endl;
-							}
-
-							if(Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(t->re->receivers->at(0))))))
-							{
-								std::cout<<Ptr<NetDevice>(dynamic_cast<NetDevice*>(&(*(t->re->receivers->at(0)))))->GetAddress()<<std::endl;
-							}
-						}
-*/
-						//-----------------------------------------------------------------
-
-						queue->push(c);
+						q->push(c);
 					}
 				}
-		//	}
-		//	std::cout<<"-----------------BFS-----------------"<<std::endl;
+
+		}
+
+		Ptr<CcnModule> Initializer::firstUnvisitedChild(Ptr<CcnModule> ccn)
+		{
+			for(unsigned i=0;i<ccn->getNode()->GetNDevices();i++)
+			{
+				if(!(this->visited.find(ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second)->second))
+				{
+					return Ptr<CcnModule>(ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second);
+				}
+			}
+
+			return 0;
 		}
 
 		Ptr<NetDevice> Initializer::ndfinder(Ptr<Node> n1,Ptr<Node> n2,int i,int j)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
 		{
 
-			for(unsigned i=0;i<module.at(j)->n->GetNDevices();i++)
-			{
-				if(module.at(j)->n->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
+				for(unsigned i=0;i<module.at(j)->getNode()->GetNDevices();i++)
 				{
-					return module.at(j)->n->GetDevice(i);
+						if(module.at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
+						{
+								return module.at(j)->getNode()->GetDevice(i);
+						}
+
+						if(module.at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
+						{
+								return module.at(j)->getNode()->GetDevice(i);
+						}
 				}
 
-				if(module.at(j)->n->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
-				{
-					return module.at(j)->n->GetDevice(i);
-				}
-			}
-
-			return 0;
+				return 0;
 		}
-
-		Ptr<CcnModule> Initializer::firstUnvisitedChild(Ptr<CcnModule> ccn)
-		{
-			for(unsigned i=0;i<ccn->map.size();i++)
-			{
-				if(!ccn->map.find(i)->second->visited)
-				{
-			//		std::cout<<"First unvisited child of node "<<ccn->node<<" is "<<ccn->map.find(i)->second->node<<std::endl;
-					return ccn->map.find(i)->second;
-				}
-			}
-
-			return 0;
-		}
+}

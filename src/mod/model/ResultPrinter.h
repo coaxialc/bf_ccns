@@ -11,16 +11,32 @@
 #include "ns3/core-module.h"
 #include "ns3/CcnModule.h"
 #include "ns3/Sender.h"
+#include "ns3/local_app.h"
+#include "ns3/Receiver.h"
+
+#include <vector>
+
+class Receiver;
+
+using std::vector;
+
+namespace ns3 {
 
 class Sender;
+class CcnModule;
 
-class ResultPrinter : public ns3::Object
-{
-	public:
-		ResultPrinter(std::vector < ns3::Ptr < CcnModule > > * module,int gs,int exp,ns3::Ptr<Sender> s);
-		std::vector < ns3::Ptr < CcnModule > > * module;
-		~ResultPrinter();
+class ResultPrinter: public ns3::Object {
 
+public:
+	ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs, uint32_t exp,
+			Ptr<Sender> s,vector < Ptr < Receiver > > receiver);
+	~ResultPrinter();
+	virtual void DoDispose(void);
+
+private:
+	vector<Ptr<CcnModule> > module;
 };
+
+}
 
 #endif /* RESULTPRINTER_H_ */

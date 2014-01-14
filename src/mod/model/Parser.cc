@@ -1,146 +1,136 @@
-
-#include "ns3/Parser.h"
-#include <vector>
+#include "Parser.h"
 #include <stdlib.h>
-#include <string>
+#include <fstream>
+#include <sstream>
+#include "ns3/network-module.h"
+#include "ns3/point-to-point-module.h"
 
-using namespace ns3;
+using std::ifstream;
+using std::istringstream;
 
-
-	//	std::string text;
-
-		Parser::Parser(std::string filename)
-		{
-			this->filename=filename;
-			kombos=new std::vector <  Ptr<Node>  >();
-			connection=new std::vector< std::vector < int > >();
-			v1=new std::vector <unsigned> ();
-			v2=new std::vector <unsigned> ();
-
-			//topology.directed_category;
-		}
-
-		Parser::~Parser()
-		{
-			//delete kombos;
-		}
+namespace ns3 {
 
 
+Parser::Parser() {
+	matrix_map = map<uint32_t, set<uint32_t> >();
+	idToNode = map<uint32_t, Ptr<Node> >() ;
+	nodeToId = map<uint32_t, uint32_t >();
+}
 
-		void Parser::parse()
-		{
-			std::ifstream f;
+Parser::~Parser() {
+	//TODO implement correctly
+}
+
+void Parser::DoDispose(void){
+	//TODO implement correctly
+}
 
 
+Ptr<Node> Parser::getNodeById(uint32_t nodeid){
+	return idToNode[nodeid];
+}
 
-			std::string line;//std::cout<<this->filename<<std::endl;
-			f.open(("/home/Coaxial/bf_workspace/ns-3-dev1/src/mod/model/"+this->filename).c_str());
+uint32_t Parser::findId(Ptr<Node> node){
+	return nodeToId[node->GetId()];
+}
 
-			int megethos=0;
-			if(f.is_open())
-			{
-				while(getline(f,line))
-				{
-					std::istringstream s(line);
-					std::string t;
+vector<Ptr<Node> > Parser::getNeighbors(uint32_t graphNodeId){
+	set<uint32_t> neighbors = matrix_map[graphNodeId];
+	vector<Ptr<Node> > v;
 
-					std::getline(s,t,'\t');
-					if(std::atoi(t.c_str())>megethos)
-					{
-						megethos=std::atoi(t.c_str());
-					}
+	set<uint32_t>::iterator iter;
+	for (iter=neighbors.begin(); iter!=neighbors.end(); iter++ ){
+		uint32_t n_id = *iter;
+		Ptr<Node> nodePtr = idToNode[n_id];
+		v.push_back(nodePtr);
+	}
+
+	return v;
+}
+
+//new one
+void Parser::parse(string& filepath) {
+	ifstream f;
+
+	string line; //std::cout<<this->filename<<std::endl;
+	f.open(filepath.c_str());
+
+	f.open(filepath.c_str());
+	if (f.is_open()) {
+		while (getline(f, line)) {
+			istringstream s(line);
+			string t;
+
+			uint32_t position = 0;
+			uint32_t sourceNode = 0;
+			set<uint32_t> neighbors;
+			while (getline(s, t, '\t')) {
+				if (t.at(0) != '<') {
+					position = atoi(t.c_str());
+					position--;
+					sourceNode = position;
+				} else if (t.at(0) == '<') {
+					//  	std::cout<<"pushing at pos: "<<position<<std::endl;
+					uint32_t neighbor = atoi((t.substr(1, t.length() - 2)).c_str())	- 1;
+					neighbors.insert(neighbor);
 				}
 
-				f.close();
+				matrix_map[sourceNode] = neighbors;
 			}
-
-			for(int i=0;i<megethos;i++)
-			{
-				kombos->push_back(CreateObject<Node>());
-				connection->push_back(*(new std::vector<int>()));
-			}
-
-			std::string line2;
-
-			f.open(("/home/Coaxial/bf_workspace/ns-3-dev1/src/mod/model/"+this->filename).c_str());
-			if(f.is_open())
-			{
-				while(getline(f,line2))
-				{
-				    std::istringstream s(line2);
-				    std::string t;
-
-				    int position=0;
-				    while(std::getline(s,t,'\t'))
-				    {
-				    	if(t.at(0)!='<')
-				    	{
-				    		position=std::atoi(t.c_str());
-				    		position--;
-				    	}
-				    	else if(t.at(0)=='<')
-				    	{
-				    	//  	std::cout<<"pushing at pos: "<<position<<std::endl;
-				    		connection->at(position).push_back(std::atoi((t.substr(1,t.length()-2)).c_str())-1);
-				    	}
-				    }
-				}
-
-				f.close();
-			}
-
-
-			    for(unsigned i=0;i<connection->size();i++)
-				{
-
-			    		for(unsigned j=0;j<connection->at(i).size();j++)
-			    		{
-			    			bool connected=false;
-			    			for(unsigned k=0;k<v1->size();k++)
-			    			{
-			    				if((v1->at(k)==i&&v2->at(k)==(unsigned)(connection->at(i).at(j)))||(v1->at(k)==(unsigned)(connection->at(i).at(j))&&v2->at(k)==i))
-			    				{
-			    					connected=true;
-			    				}
-			    			}
-
-			    			if(!connected)
-			    			{
-			    				NodeContainer n;
-			    				Ptr<Node> k1=(kombos->at(i));
-			    				Ptr<Node> k2=(kombos->at(connection->at(i).at(j)));
-			    				n.Add(k1);
-			    				n.Add(k2);
-
-			    				PointToPointHelper pph;
-			    				pph.SetQueue(std::string("ns3::DropTailQueue"),std::string("MaxPackets"),ns3::UintegerValue(429496729), std::string("MaxBytes"),ns3::UintegerValue(429496729));
-			    				pph.SetDeviceAttribute("DataRate", StringValue ("5Mbps"));
-			    				pph.SetChannelAttribute("Delay", StringValue ("2ms"));
-			    				ndc=pph.Install(n);
-
-			    								v1->push_back(i);
-			    				v2->push_back(connection->at(i).at(j));
-
-			    				boost::add_edge(i,connection->at(i).at(j),topology);
-			    			}
-
-			    		}
-
-			    }
-			}
-
-
-		graph Parser::getGraph()
-		{
-			return topology;
 		}
 
+		f.close();
+	}
+	map<uint32_t, set<uint32_t> >::iterator iter;
+	NodeContainer n;
+	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){
+		uint32_t node = iter->first;
+		Ptr<Node> nodePtr = CreateObject<Node>();
+		n.Add(nodePtr);
+		idToNode[node] = nodePtr;
+		nodeToId[nodePtr->GetId()] = node;
+	}
 
+	map<uint32_t, set<uint32_t> > alreadyConnected;
+	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){
+		Ptr<Node> sourceNode = getNodeById(iter->first);
+		vector<Ptr<Node> > neighbors = getNeighbors(iter->first);
+		vector<Ptr<Node> >::iterator neighborsIter;
+		for (neighborsIter=neighbors.begin(); neighborsIter!=neighbors.end(); neighborsIter++ ){
+			uint32_t sourceNodeGraphId = nodeToId[sourceNode->GetId()];
+			uint32_t neighborNodeGraphId = nodeToId[(*neighborsIter)->GetId()];
+			uint32_t min = sourceNodeGraphId < neighborNodeGraphId? sourceNodeGraphId : neighborNodeGraphId;
+			uint32_t max = sourceNodeGraphId >= neighborNodeGraphId? sourceNodeGraphId : neighborNodeGraphId;
 
+			map<uint32_t, set<uint32_t> >::iterator find =alreadyConnected.find(min);
+			if (find != alreadyConnected.end()){
+				set<uint32_t> links = find->second;
+				if (links.find(max) != links.end()){
+					continue;
+				}
+			}
 
+			NodeContainer n;
+			n.Add(sourceNode);
+			n.Add(*neighborsIter);
 
+			PointToPointHelper pph;
+			pph.SetQueue(string("ns3::DropTailQueue"),
+					string("MaxPackets"),
+					ns3::UintegerValue(10000), string("MaxBytes"),
+					ns3::UintegerValue(10000));
+			pph.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+			pph.SetChannelAttribute("Delay", StringValue("2ms"));
+			NetDeviceContainer ndc = pph.Install(n);
 
+			boost::add_edge(sourceNodeGraphId, neighborNodeGraphId, topology);
+			alreadyConnected[min].insert(max);
+		}
+	}
+}
 
+graph Parser::getGraph() {
+	return topology;
+}
 
-
-
+}

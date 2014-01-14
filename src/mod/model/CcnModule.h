@@ -1,118 +1,85 @@
-
 #ifndef CCNMODULE_H
 #define CCNMODULE_H
 
-#include "ns3/Text.h"
-#include "ns3/Sender.h"
-#include "ns3/Receiver.h"
+#include <map>
+#include <string>
+
+#include "ns3/core-module.h"
+#include "ns3/network-module.h"
 #include "ns3/Trie.h"
 #include "ns3/Bloomfilter.h"
 #include "ns3/PIT.h"
-#include "ns3/md5.h"
-#include "ns3/sha1.h"
-#include "ns3/CCN_Interest.h"
-#include <bitset>
-#include "ns3/CCN_Data.h"
+#include "ns3/CCN_Name.h"
+#include "ns3/ccn-packets.h"
+
+using std::string;
+using std::map;
+
+
+namespace ns3 {
 
 class Trie;
-class Sender;
-class Receiver;
 class Bloomfilter;
 class PIT;
 class CCN_Data;
 class CCN_Interest;
-
-	class CcnModule  : public ns3::Object
-	{
-		public:
-
-		static int interestCount;
-		static int dataCount;
-		int data;
-
-		CcnModule(int length,int d,int switchh,ns3::Ptr<ns3::UniformRandomVariable> rv);
-
-		~CcnModule();
-
-		int d;
-
-		bool visited;
-
-		ns3::Ptr<ns3::UniformRandomVariable> rv;
-
-		int switchh;
-
-		int node;
-
-		int length;
-
-		ns3::Ptr<Text> text;
-
-		ns3::Ptr<Trie> FIB;
-
-		long size(ns3::Ptr<ns3::Packet> p);
-
-		char extract_packet_type(ns3::Ptr<const ns3::Packet> p);
-
-		std::vector < ns3::Ptr<CCN_Name> >* DATA;
-
-		void reInit();
-
-		std::string stringtobinarystring(std::string s);
-
-		//std::bitset<128> stringtobitset1(std::string s);
-
-		//std::bitset<160> stringtobitset2(std::string s);
-
-		ns3::Ptr<PIT> p_i_t;
-
-		ns3::Ptr<ns3::Node> n;
+class CCN_Name;
 
 
-	//	ns3::Ptr<Sender> s;
-		ns3::Ptr<Receiver> r;
+class CcnModule: public Object {
+public:
 
-		std::map < int, ns3::Ptr < CcnModule > > map;
+	static uint32_t RX_INTERESTS;
+	static uint32_t RX_DATA;
 
-		void sendDataLow(ns3::Ptr<Bloomfilter> bf,ns3::Ptr<CCN_Data> data ,ns3::Ptr<ns3::NetDevice> nd);
+	CcnModule(Ptr<Node>, int switchh);
+	~CcnModule();
+	virtual void DoDispose(void);
 
-		//ns3::Ptr<Bloomfilter> add(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+	uint8_t extract_packet_type(Ptr<const Packet> p);
+	void reInit();
+	string stringtobinarystring(string s);
 
-		bool equals(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+	uint32_t bfForward(Ptr<Bloomfilter>, Ptr<CCN_Data>,	Ptr<NetDevice> );
+	void sendThroughDevice(Ptr<const Packet> p, Ptr<NetDevice> nd);
+	int decideTtl();
 
-		void sendThroughDevice(ns3::Ptr<const ns3::Packet> p,ns3::Ptr<ns3::NetDevice> nd);
+	uint32_t getTXData(); //const {return p_RX_Data;}
+	uint32_t getNodeId() ;//const {return nodePtr->GetId(); }
+	Ptr<Trie> getFIB();
+	Ptr<PIT> getPIT();
+	Ptr<Node> getNode();
+	map<Ptr<NetDevice>, Ptr<CcnModule> > getNeighborModules();
 
-		int decideTtl();
+	//for LocalApp
+	void sendInterest(Ptr<CCN_Name> name, Ptr<LocalApp>);
+	void sendData(Ptr<CCN_Name>, uint8_t *buff, uint32_t bufflen);
 
-		void sendInterest(ns3::Ptr<CCN_Name> name);
+	bool handlePacket(Ptr<NetDevice> nd, Ptr<const Packet> p, uint16_t a, const Address& ad);
+	void handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd);
+	void handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd);
 
-	//	std::map < ns3::Ptr < Bloomfilter >, ns3::Ptr < ns3::NetDevice > >* ltd;
-		std::map < ns3::Ptr < ns3::NetDevice > , ns3::Ptr < Bloomfilter > >* dtl;
+	void installLIDs();
 
-		void sendData(ns3::Ptr<CCN_Name>,char *buff, int bufflen,ns3::Ptr < Bloomfilter > bf,int ttl,ns3::Ptr<ns3::NetDevice> excluded);
+	friend bool operator< (const Ptr<NetDevice>&, const Ptr<NetDevice>&);
 
-		void handleIncomingData(ns3::Ptr<const ns3::Packet> p, ns3::Ptr<ns3::NetDevice> nd);
+private:
+	uint32_t p_RX_Data;
+	uint32_t switchh;
 
-		void handleIncomingInterest(ns3::Ptr<const ns3::Packet> p, ns3::Ptr<ns3::NetDevice> nd);
+	Ptr<Trie> FIB;
+	Ptr<PIT> thePIT;
+	Ptr<Node> nodePtr;
+	map<Ptr<NetDevice>, Ptr<CcnModule> > neighborModules;
+	map<Ptr<NetDevice>, Ptr<Bloomfilter> > deviceToLid;
+	map<Ptr<NetDevice>, Address> addresses;
 
-		/*optional*/
-		void announceName(ns3::Ptr<CCN_Name> name, ns3::Ptr<Sender> app);
+	void doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp>);
+	void doSendData(Ptr<CCN_Name>, uint8_t *buff, uint32_t bufflen);
 
-	//	ns3::Ptr<Bloomfilter> orbf(ns3::Ptr<Bloomfilter> f,ns3::Ptr<Bloomfilter> s);
+	static Time ONE_NS;
 
-		void setNode(ns3::Ptr<ns3::Node>);
-
-		std::string stringForm(int hc);
-
-		void takeCareOfHashes();
-
-		//void send(ns3::Ptr<ns3::Packet> p,ns3::Ptr<Bloomfilter> bf,ns3::Ptr<ns3::NetDevice> excluded,std::string calledby);
-
-		bool handlePacket(ns3::Ptr<ns3::NetDevice> nd,ns3::Ptr< const ns3::Packet> p,uint16_t a,const ns3::Address& ad);
-		
-		private:
-		void sendInterest(ns3::Ptr<CCN_Interest> insterest,ns3::Ptr < ns3::NetDevice > nd);
-	};
-
+};
+}
 #endif
 

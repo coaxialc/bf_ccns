@@ -2,37 +2,49 @@
 #ifndef PARSER_H_
 #define PARSER_H_
 
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/applications-module.h"
+
+//#include "ns3/network-module.h"
+//#include "ns3/internet-module.h"
+//#include "ns3/point-to-point-module.h"
+//#include "ns3/applications-module.h"
+#include <vector>
+#include <string>
+#include <map>
+#include <set>
 #include <boost/graph/adjacency_list.hpp>
+#include "ns3/core-module.h"
+#include "ns3/node.h"
+
+using std::vector;
+using std::map;
+using std::set;
+using std::string;
 
 typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS> graph;
 typedef boost::graph_traits<graph>::vertex_descriptor vertex;
 
-	class Parser : public ns3::Object
-	{
-		public:
-		std::vector <  ns3::Ptr<ns3::Node>  >* kombos;
-		std::vector< std::vector < int > >* connection;
-		ns3::NetDeviceContainer ndc;
-		std::vector <unsigned>* v1;
-		std::vector <unsigned>* v2;
-		std::string filename;
+namespace  ns3 {
 
-		Parser(std::string filename);
+class Parser : public Object
+{
+	public:
+	map<uint32_t, set<uint32_t> > matrix_map;
+	map<uint32_t, Ptr<Node> > idToNode;
+	map<uint32_t, uint32_t > nodeToId;
 
-		~Parser();
+	Parser();
+	~Parser();
+	virtual void DoDispose(void);
 
+	Ptr<Node> getNodeById(uint32_t);
+	uint32_t findId(Ptr<Node>);
 
-		void parse();
-		graph topology;
-		graph getGraph();
-	};
+	vector<Ptr<Node> > getNeighbors(uint32_t);
 
+	void parse(string &);
+	graph topology;
+	graph getGraph();
+};
 
-
-
+}  // namespace  ns3
 #endif /* PARSER_H_ */

@@ -1,27 +1,31 @@
 #ifndef TEXT_H_
 #define TEXT_H_
 
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/point-to-point-module.h"
+#include <map>
+#include <string>
+
+#include "ns3/object.h"
 #include "ns3/mod-module.h"
 
+using std::map;
+using std::string;
 
-	class Text  : public ns3::Object
-	{
-		private:
+namespace ns3{
 
-		Text();
-		static ns3::Ptr<Text> text;
-		std::map<std::string,std::string*>* textContainer;
+class Text  : public Object
+{
+	private:
 
-		public:
-		~Text();
-		ns3::Ptr<CCN_Name> giveText(std::string* text);
-		void removeText(std::string* text);
-		static ns3::Ptr<Text> getPtr();
-	};
+	Text();
+	static Ptr<Text> text;
+	map<string, string*>* textContainer;
 
+	public:
+	~Text();
+	virtual void DoDispose(void);
+	Ptr<CCN_Name> giveText(string* text);
+	void removeText(string* text);
+	static Ptr<Text> getPtr();
+};
+}
 #endif

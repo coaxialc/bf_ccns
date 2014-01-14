@@ -8,27 +8,50 @@
 #ifndef TRIENODE_H_
 #define TRIENODE_H_
 
+#include <map>
+#include <vector>
+#include <string>
 #include "ns3/core-module.h"
-#include "ns3/Receivers.h"
+#include "ns3/net-device.h"
+#include "ns3/local_app.h"
+#include "CCN_Name.h"
 
-	class TrieNode  : public ns3::Object
-	{
-		public:
-		TrieNode(std::string* incoming_word, ns3::Ptr<Receivers> re);
-		~TrieNode();
+using std::map;
+using std::vector;
+using std::string;
 
-		std::map<std::string,ns3::Ptr<TrieNode> >* getChildren();
-		bool checkEnd();
+namespace ns3 {
+class LocalApp;
 
-		void setEnd(bool end);
-		std::string word;
-		bool end;
-		ns3::Ptr<Receivers> re;
+class TrieNode: public Object {
+public:
+	TrieNode(Ptr<PtrString> incoming_word);
+	~TrieNode();
+	virtual void DoDispose(void);
 
-		private:
-		std::map<std::string,ns3::Ptr<TrieNode> >* children;
+	map<Ptr<PtrString>, Ptr<TrieNode> > getChildren(){ return children; }
 
+	Ptr<TrieNode> setAndGetChildren(Ptr<PtrString>);
+	Ptr<TrieNode> getChild(Ptr<PtrString>);
+	bool hasDevices(){return devices != 0;}
+	bool hasLocalApps(){ return localApps != 0;}
+	bool hasData();
 
-	};
+	vector<Ptr<LocalApp> >* getLocalApps(){return localApps;}
+	vector<Ptr<NetDevice> >* getDevices(){return devices;}
 
+	bool isLeaf() { return children.size() == 0; }
+	bool addDevice(Ptr<NetDevice>);
+	bool addLocalApp(Ptr<LocalApp>);
+
+private:
+
+	Ptr<PtrString> word;
+
+	vector<Ptr<NetDevice> > *devices;
+	vector<Ptr<LocalApp> > *localApps;
+	map<Ptr<PtrString>, Ptr<TrieNode> > children;
+
+};
+}
 #endif /* TRIENODE_H_ */
