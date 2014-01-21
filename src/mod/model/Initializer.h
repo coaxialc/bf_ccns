@@ -18,7 +18,7 @@ namespace ns3
 	class Initializer  : public Object
 	{
 		public:
-		Initializer(std::vector < Ptr < CcnModule > >* ,Ptr<Parser> ,int ,uint32_t);
+		Initializer(std::vector < Ptr < CcnModule > >* ,Ptr<Parser> ,int ,uint32_t,map <uint32_t , uint32_t>);
 
 		~Initializer();
 
@@ -29,7 +29,8 @@ namespace ns3
 		vector < Ptr < CcnModule > > module;
 		Ptr<Parser> parser;
 		map<Ptr<CcnModule>, bool > visited;
-		Ptr<NetDevice> ndfinder(Ptr<Node> n1,Ptr<Node> n2,int i,int j);
+		Ptr<NetDevice> ndfinder(Ptr<Node> n1,Ptr<Node> n2);
+		map <uint32_t , uint32_t> nodeToModule;
 	};
 }
 

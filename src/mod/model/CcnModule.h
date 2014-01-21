@@ -32,7 +32,7 @@ public:
 	static uint32_t RX_INTERESTS;
 	static uint32_t RX_DATA;
 
-	CcnModule(Ptr<Node>, int switchh);
+	CcnModule(Ptr<Node>, int switchh,Ptr<UniformRandomVariable> );
 	~CcnModule();
 	virtual void DoDispose(void);
 
@@ -50,6 +50,7 @@ public:
 	Ptr<PIT> getPIT();
 	Ptr<Node> getNode();
 	map<Ptr<NetDevice>, Ptr<CcnModule> > getNeighborModules();
+	void setNeighbor(Ptr<NetDevice> dev, Ptr<CcnModule> module){ neighborModules[dev] = module;}
 
 	//for LocalApp
 	void sendInterest(Ptr<CCN_Name> name, Ptr<LocalApp>);
@@ -64,6 +65,7 @@ public:
 	friend bool operator< (const Ptr<NetDevice>&, const Ptr<NetDevice>&);
 
 private:
+	Ptr<UniformRandomVariable> urv;
 	uint32_t p_RX_Data;
 	uint32_t switchh;
 

@@ -49,22 +49,22 @@ vector<Ptr<Node> > Parser::getNeighbors(uint32_t graphNodeId){
 }
 
 //new one
-void Parser::parse(string& filepath) {
+void Parser::parse(string& filepath) {//	std::cout<<"PARSING"<<std::endl;
 	ifstream f;
 
 	string line; //std::cout<<this->filename<<std::endl;
 	f.open(filepath.c_str());
 
-	f.open(filepath.c_str());
-	if (f.is_open()) {
-		while (getline(f, line)) {
+
+	if (f.is_open()) {	//std::cout<<"FILE OPENING"<<std::endl;
+		while (getline(f, line)) {//	std::cout<<"FIRST TOKENIZATION"<<std::endl;
 			istringstream s(line);
 			string t;
 
 			uint32_t position = 0;
 			uint32_t sourceNode = 0;
 			set<uint32_t> neighbors;
-			while (getline(s, t, '\t')) {
+			while (getline(s, t, '\t')) {//	std::cout<<"SECOND TOKENIZATION"<<std::endl;
 				if (t.at(0) != '<') {
 					position = atoi(t.c_str());
 					position--;
@@ -81,10 +81,22 @@ void Parser::parse(string& filepath) {
 
 		f.close();
 	}
+
+	/*map<uint32_t, set<uint32_t> >::iterator it;
+	for (it=matrix_map.begin(); it!=matrix_map.end(); it++ ){
+
+		std::cout<<"matrix has: "<<it->first<<std::endl;
+		if(it)
+		{
+
+		}
+	}
+
+*/
 	map<uint32_t, set<uint32_t> >::iterator iter;
 	NodeContainer n;
-	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){
-		uint32_t node = iter->first;
+	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){//	std::cout<<"NODE CONSTRUCTION"<<std::endl;
+		uint32_t node = iter->first;//std::cout<<"adding to idToNode: "<<iter->first<<std::endl;
 		Ptr<Node> nodePtr = CreateObject<Node>();
 		n.Add(nodePtr);
 		idToNode[node] = nodePtr;
@@ -92,11 +104,11 @@ void Parser::parse(string& filepath) {
 	}
 
 	map<uint32_t, set<uint32_t> > alreadyConnected;
-	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){
+	for (iter=matrix_map.begin(); iter!=matrix_map.end(); iter++ ){	//std::cout<<"OUTER FOR"<<std::endl;
 		Ptr<Node> sourceNode = getNodeById(iter->first);
 		vector<Ptr<Node> > neighbors = getNeighbors(iter->first);
 		vector<Ptr<Node> >::iterator neighborsIter;
-		for (neighborsIter=neighbors.begin(); neighborsIter!=neighbors.end(); neighborsIter++ ){
+		for (neighborsIter=neighbors.begin(); neighborsIter!=neighbors.end(); neighborsIter++ ){	//std::cout<<"INNER FOR"<<std::endl;
 			uint32_t sourceNodeGraphId = nodeToId[sourceNode->GetId()];
 			uint32_t neighborNodeGraphId = nodeToId[(*neighborsIter)->GetId()];
 			uint32_t min = sourceNodeGraphId < neighborNodeGraphId? sourceNodeGraphId : neighborNodeGraphId;
@@ -124,6 +136,8 @@ void Parser::parse(string& filepath) {
 			NetDeviceContainer ndc = pph.Install(n);
 
 			boost::add_edge(sourceNodeGraphId, neighborNodeGraphId, topology);
+			//std::cout<<"Just added edge to topology"<<std::endl;
+
 			alreadyConnected[min].insert(max);
 		}
 	}

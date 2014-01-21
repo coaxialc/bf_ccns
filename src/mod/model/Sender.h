@@ -38,7 +38,7 @@ public:
 	void SendData(Ptr<CCN_Name> data, Ptr<Packet>);
 
 	void AnnounceName(Ptr<CCN_Name> n);
-	void insertData(const pair < Ptr< CCN_Name >,char* > );
+	void insertData(Ptr< CCN_Name >, Ptr<Packet> );
 
 private:
 	void handleInterest(Ptr<CCN_Name>);

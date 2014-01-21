@@ -17,7 +17,7 @@ void PIT::DoDispose(void) {
 	table.clear();
 }
 
-void PIT::update(Ptr<CCN_Name> name, Ptr<PTuple> re) {
+void PIT::update(Ptr<CCN_Name> name, Ptr<PTuple> re) {// std::cout<<re->getBF()->toString()<<std::endl;
 	table[name] = re;
 }
 

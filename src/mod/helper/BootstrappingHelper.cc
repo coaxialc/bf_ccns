@@ -13,103 +13,93 @@ using std::endl;
 
 using namespace ns3;
 
-BootstrappingHelper::BootstrappingHelper(unsigned int s,string filename,int gsize,int length,int d,int switchh)
+BootstrappingHelper::BootstrappingHelper(string filename,int gsize,int length,int d,int switchh,Ptr<UniformRandomVariable> urv)
 {
+	this->urv=urv;
 	this->filename=filename;
 	vec3=new std::vector< Ptr < Object > >();
 
-	RngSeedManager::SetSeed (s);
 	this->d=d;
 	this->length=length;
 	this->gs=gsize;
-	//std::cout<<"group size"<<gs<<std::endl;
-	r=CreateObject<UniformRandomVariable>();
+//	r=CreateObject<UniformRandomVariable>();
 	this->switchh=switchh;
-
+	nodeToModule=map<uint32_t, uint32_t >();//to find module index in the vector that is connected to specific node (by its id)
 }
-
-/*void BootstrappingHelper::staticStart(unsigned int s,string filename,int gsize,int length,int d,int switchh)
-{
-	this->filename=filename;
-	vec3=new std::vector< Ptr < Object > >();
-
-	RngSeedManager::SetSeed (s);
-	this->d=d;
-	this->length=length;
-	this->gs=gsize;
-	//std::cout<<"group size"<<gs<<std::endl;
-	r=CreateObject<UniformRandomVariable>();
-	this->switchh=switchh;
-}*/
 
 BootstrappingHelper::~BootstrappingHelper()
 {
-	r=0;
 	delete vec3;
 	p=0;
 }
 
-
 void BootstrappingHelper::parseTopology()
 {
-	//text=Text::getPtr();
-
 	p=CreateObject<Parser>();
 
 	p->parse(filename);
 
 	module=new vector < Ptr < CcnModule > >();
 
-	for(unsigned i=0;i<p->idToNode.size();i++)
-	{
-		module->push_back(CreateObject<CcnModule>(p->idToNode.find(i)->second,this->switchh,r));
+	map<uint32_t, Ptr<Node> >::iterator iter;
+
+	for (iter=p->idToNode.begin(); iter!=p->idToNode.end(); iter++ ){//iterating using iterator ,not size and counters ,because in the middle there are numbers we do not want to use
+		Ptr<CcnModule> m = CreateObject<CcnModule>(iter->second,this->switchh,urv);
+		nodeToModule[iter->first]=module->size();//if there are x already inside ,then the next will be the (x+1)th ,with index x
+		module->push_back(m);
 	}
 
-	for(unsigned i=0;i<p->idToNode.size();i++)
+	for(unsigned i=0;i<module->size();i++)//here we use the size and counter because we want to refer to vector indexes (module's)
 	{
 		module->at(i)->installLIDs();
 	}
 
-	for(unsigned i=0;i<p->idToNode.size();i++)
+	map<uint32_t, Ptr<Node> >::iterator iter2;
+
+	//here we set the neighbors of every CcnModule
+	for (iter2=p->idToNode.begin(); iter2!=p->idToNode.end(); iter2++ )//here we want an iterator again ,because we must not try to refer to nodes that do not exist
 	{
-		for(unsigned j=0;j<p->getNeighbors(i).size();j++)
+		for(unsigned j=0;j<p->getNeighbors(iter2->first).size();j++)//for every neighbor
 		{
-			/*for(uint32_t k=0;k<module->at(i)->nodePtr->GetNDevices();k++)
+			Ptr<Node> n1=p->getNeighbors(iter2->first).at(j);//this is the neighbor
+
+			uint32_t u1=p->nodeToId[n1->GetId()];//neighbors id (the id we use ,not the system's)
+
+			Ptr<CcnModule> ccn_module=module->at(nodeToModule.find(u1)->second);//neighbor's module
+
+			Ptr<Node> n2=iter2->second;//this node
+
+			uint32_t u2=iter2->first;//this node's id
+
+			Ptr<NetDevice> net_device = ndfinder(n1,n2);
+
+			if(net_device==0)
 			{
-				module->at(i)->nodePtr->GetDevice(k)->GetChannel()
-			}*/
+				std::cout<<"net_device null"<<std::endl;
+			}
 
-			const std::pair< Ptr<NetDevice> , Ptr < CcnModule > > pa
-			(
-					ndfinder(   module->at(p->nodeToId(p->getNeighbors(i).at(j)))->getNode() ,   module->at(i)->getNode() ,   module->at((p->nodeToId(p->getNeighbors(i).at(j))->getNodeId()))   ,   module->at(i)->getNodeId())
-					,
-					module->at((int)(p->nodeToId(p->getNeighbors(i).at(j))))
-		    );
-
-			module->at(i)->getNeighborModules().insert(pa);
+			module->at(nodeToModule.find(u2)->second)->setNeighbor(net_device, ccn_module);
 		}
 	}
-	//std::cout<<"MEGETHOS:   "<<p->kombos->size()<<std::endl;
 }
 
-Ptr<NetDevice> BootstrappingHelper::ndfinder(Ptr<Node> n1,Ptr<Node> n2,uint32_t i,uint32_t j)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
-{
-
-	for(unsigned i=0;i<module->at(j)->getNode()->GetNDevices();i++)
+Ptr<NetDevice> BootstrappingHelper::ndfinder(Ptr<Node> n1,Ptr<Node> n2)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
 	{
-			if(module->at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
-			{
-					return module->at(j)->getNode()->GetDevice(i);
-			}
+		for(unsigned i=0;i<n2->GetNDevices();i++)
+		{
+				if(n2->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
+				{
+						return n2->GetDevice(i);
+				}
 
-			if(module->at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
-			{
-					return module->at(j)->getNode()->GetDevice(i);
-			}
+				if(n2->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
+				{
+						return n2->GetDevice(i);
+				}
+		}
+
+		return 0;
 	}
-
-	return 0;
-}
 
 void BootstrappingHelper::startExperiment()
 {
@@ -150,13 +140,6 @@ void BootstrappingHelper::startExperiment()
 		exit(EXIT_FAILURE);
 	}
 
-/*
-	for(unsigned i=0;i<v1.size();i++)
-	{
-		std::cout<<in[v1.at(i)]<<std::endl;
-	}
-*/
-
 	{
 		uint32_t numOfReq=200;
 
@@ -166,7 +149,6 @@ void BootstrappingHelper::startExperiment()
 
 		for(unsigned c=0;c<10;c++)
 		{
-		//	std::cout<<"Experiment: "<<c<<std::endl<<std::endl;
 			vector <vertex> group=select(v1,gs);
 			vertex dataOwner=selectOwner(v1,group);
 
@@ -174,20 +156,12 @@ void BootstrappingHelper::startExperiment()
 			//----------------------------------------------------
 			Ptr<Sender> sa1=CreateObject<Sender>(module->at(in[dataOwner]),60);
 
-		//	static vector <std::string*>* sv=new vector <string*>();
 			char d2 []={'h','e','l','l','o'};
-
-			/*for(int i=0;i<numOfReq;i++)
-			{
-				stringstream st;
-				st << i;
-				sv->push_back(new std::string("domain1/domain2/domain3/"+st.str()));
-			}*/
 
 			vector < Ptr < CCN_Name > >* nameVector=new vector < Ptr < CCN_Name > >();
 			vector<string>* nv=new vector<string>();
 
-			for(uint32_t i=0;i<numOfReq;i++)
+			for(uint32_t i=1;i<=numOfReq;i++)
 			{
 				nv=new vector<string>();
 				nv->push_back("domain1");
@@ -203,25 +177,24 @@ void BootstrappingHelper::startExperiment()
 			}
 
 			for(uint32_t i=0;i<numOfReq;i++)
-			{
-				const pair < Ptr< CCN_Name >,char* > pa (nameVector->at(i),d2);
-
-				sa1->insertData(pa);
+			{				
+				Ptr<Packet> packet = Create<Packet>((uint8_t*)d2, (uint32_t)strlen(d2));
+				sa1->insertData(nameVector->at(i), packet);
 
 				const pair < ns3::Ptr< CCN_Name >, int > pa2 (nameVector->at(i),5);
-
-			//	sa1->length.insert(pa2);
-
-			//	module->at(in[dataOwner])->DATA->push_back(nameVector->at(i));
 			}
-/*
-			vec3=new vector < Ptr < Object > >();
-			vec3->push_back(sa1);
 
-			rec3=CreateObject<Receivers>(vec3);*/
+
 
 			for(uint32_t i=0;i<numOfReq;i++)
 			{
+				//std::cout<<"putting: "<<nameVector->at(i)->toString()<<std::endl;
+
+				if(sa1->getLocalApp()==0)
+				{
+					std::cout<<"XONO NULL STON OWNER"<<std::endl;
+				}
+
 				module->at(in[dataOwner])->getFIB()->put(nameVector->at(i),sa1->getLocalApp());
 			}
 
@@ -237,16 +210,16 @@ void BootstrappingHelper::startExperiment()
 			name3->push_back("domain2");
 			name3->push_back("domain3");
 
-		//	static string* name3=new string("domain1/domain2/domain3/");
-			Ptr<CCN_Name> name4=CreateObject<CCN_Name>(*name3);
-		//	std::cout<<"ererer:      "<<name4->getValue()<<std::endl;
 
+			Ptr<CCN_Name> name4=CreateObject<CCN_Name>(*name3);
+
+			//std::cout<<"module size: "<<module->size()<<std::endl;
 			for(unsigned i=0;i<gs;i++)
-			{
-				vec->push_back(CreateObject<Receiver>(module->at(in[group.at(i)])));
+			{   //std::cout<<"accessing: "<<in[group.at(i)]<<std::endl;
+				vec->push_back(CreateObject<Receiver>(module->at(nodeToModule.find(in[group.at(i)])->second)));
 			}
 
-			this->i=CreateObject<Initializer>(module,p,in[dataOwner],numOfReq);
+			this->i=CreateObject<Initializer>(module,p,nodeToModule.find(in[dataOwner])->second,numOfReq,nodeToModule);
 			this->i->initializeFIBs();
 
 			for(unsigned i=0;i<gs;i++)
@@ -261,14 +234,13 @@ void BootstrappingHelper::startExperiment()
 			Simulator::Schedule(t,&BootstrappingHelper::PITCheck,this,gs,c);
 			//----------------------------------------------------
 
-	//		ns3::Time t2=ns3::Seconds(180);
-	//		ns3::Simulator::Schedule(t2,&BootstrappingHelper::specificData,this);
+
 			Simulator::Run();
 
 
 			//print results and initialize structures again
 			//----------------------------------------------------
-			Ptr<ResultPrinter> rp=CreateObject<ResultPrinter>(module,gs,c,sa1);
+			Ptr<ResultPrinter> rp=CreateObject<ResultPrinter>(*module,gs,c,sa1,*vec);
 
 			//print to file
 			//----------------------------------------------------
@@ -315,9 +287,11 @@ std::vector <vertex> BootstrappingHelper::select(std::vector <vertex> v,unsigned
 
 	for(unsigned i=0;i<gs;i++)
 	{
-		r->SetAttribute ("Min", DoubleValue (i+1));
-		r->SetAttribute ("Max", DoubleValue (v.size()-1));
-		int pos=r->GetInteger();
+		/*ExperimentGlobals::RANDOM_VAR->SetAttribute ("Min", DoubleValue (i+1));
+		ExperimentGlobals::RANDOM_VAR->SetAttribute ("Max", DoubleValue (v.size()-1));*/
+		//int pos=ExperimentGlobals::RANDOM_VAR->GetInteger(i+1,v.size()-1);
+
+		int pos=urv->GetInteger(i+1,v.size()-1);
 
 		std::swap(v[i],v[pos]);
 	}
@@ -352,9 +326,10 @@ vertex BootstrappingHelper::selectOwner(std::vector <vertex> v1,std::vector <ver
 		}
 	}
 
-	r->SetAttribute ("Min", DoubleValue (0));
-	r->SetAttribute ("Max", DoubleValue (d.size()-1));
-	int pos=r->GetInteger();
+	/*ExperimentGlobals::RANDOM_VAR->SetAttribute ("Min", DoubleValue (0));
+	ExperimentGlobals::RANDOM_VAR->SetAttribute ("Max", DoubleValue (d.size()-1));*/
+//	int pos=ExperimentGlobals::RANDOM_VAR->GetInteger(0,d.size()-1);
+	int pos=urv->GetInteger(0,d.size()-1);
 
 	return d.at(pos);
 }
@@ -377,11 +352,3 @@ void BootstrappingHelper::PITCheck(int gs,int exp)
 		file.close();
 	}
 }
-
-//void BootstrappingHelper::specificData()
-//{
-//	for(unsigned i=0;i<module->size();i++)
-//			{
-//				std::cout<<module->at(i)->data<<std::endl;
-//			}
-//}

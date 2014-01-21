@@ -13,12 +13,18 @@ namespace ns3
 
 class CcnModule;
 
-		Initializer::Initializer(vector < Ptr < CcnModule > >* module,Ptr<Parser> parser,int dataOwner,uint32_t dataNum)
+		Initializer::Initializer(vector < Ptr < CcnModule > >* module,Ptr<Parser> parser,int dataOwner,uint32_t dataNum,map <uint32_t , uint32_t> nodeToModule)
 		{
 			this->module=*module;
 			this->parser=parser;
 			this->dataOwner=dataOwner;
 			this->dataNum=dataNum;
+			this->nodeToModule=nodeToModule;
+
+			for(uint32_t i=0;i<module->size();i++)
+			{
+				visited[module->at(i)]=false;
+			}
 		}
 
 		Initializer::~Initializer()
@@ -28,53 +34,46 @@ class CcnModule;
 
 		void Initializer::initializeFIBs()
 		{
-
 			unsigned i=this->dataOwner;
+			queue < Ptr < CcnModule > >* q=new queue < Ptr < CcnModule > >();
+			q->push(module.at(i));
+
+			visited.find(module.at(i))->second=true;
+
+			while(q->size()!=0)
+			{	//std::cout<<"first while"<<std::endl;
+				Ptr<CcnModule> handle=q->front();
+				q->pop();
+
+				Ptr<CcnModule> c=0;
+				while((c=firstUnvisitedChild(handle))!=0)
+				{//std::cout<<"second while"<<std::endl;
+					visited.find(c)->second=true;
 
 
-				queue < Ptr < CcnModule > >* q=new queue < Ptr < CcnModule > >();
-				q->push(module.at(i));
-
-				visited.find(module.at(i))->second=true;
-
-				while(q->size()!=0)
-				{
-					Ptr<CcnModule> handle=q->front();
-					q->pop();
-
-					Ptr<CcnModule> c=0;
-					while((c=firstUnvisitedChild(handle))!=0)
+					for(uint32_t k=1;k<=this->dataNum;k++)
 					{
-						visited.find(c)->second=true;
+						vector <string>* nameVector=new vector<string>();
+						nameVector->push_back("domain1");
+						nameVector->push_back("domain2");
+						nameVector->push_back("domain3");
 
+						stringstream sstream;
+						sstream << k;
 
-						for(uint32_t k=0;k<this->dataNum;k++)
+						nameVector->push_back(sstream.str());
+						Ptr<CCN_Name> name=CreateObject<CCN_Name>(*nameVector);
+
+						if(ndfinder(handle->getNode(),c->getNode())==0)
 						{
-							//std::vector < Ptr < Object > >* vec=new std::vector < Ptr < Object > >();
-							//vec->push_back(ndfinder(handle->n,c->n,handle->node,c->node));
-							//Ptr<Receivers> rec=CreateObject<Receivers>(vec);
-
-							vector <string>* nameVector=new vector<string>();
-							nameVector->push_back("domain1");
-							nameVector->push_back("domain2");
-							nameVector->push_back("domain3");
-
-							stringstream sstream;
-							sstream << k;
-
-							nameVector->push_back(sstream.str());
-							Ptr<CCN_Name> name=CreateObject<CCN_Name>(*nameVector);
-
-							c->getFIB()->put(name,ndfinder(handle->getNode(),c->getNode(),handle->getNodeId(),c->getNodeId()));
-
-
-						//	c->FIB->put(*(module.at(i)->DATA->at(k)),rec);
+							std::cout<<"XONO NULL STO ALLO"<<std::endl;
 						}
 
-						q->push(c);
+						c->getFIB()->put(name,ndfinder(handle->getNode(),c->getNode()));
 					}
+					q->push(c);
 				}
-
+			}
 		}
 
 		Ptr<CcnModule> Initializer::firstUnvisitedChild(Ptr<CcnModule> ccn)
@@ -90,22 +89,22 @@ class CcnModule;
 			return 0;
 		}
 
-		Ptr<NetDevice> Initializer::ndfinder(Ptr<Node> n1,Ptr<Node> n2,int i,int j)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
+
+		Ptr<NetDevice> Initializer::ndfinder(Ptr<Node> n1,Ptr<Node> n2)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
 		{
+			for(unsigned i=0;i<n2->GetNDevices();i++)
+			{
+					if(n2->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
+					{
+							return n2->GetDevice(i);
+					}
 
-				for(unsigned i=0;i<module.at(j)->getNode()->GetNDevices();i++)
-				{
-						if(module.at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)
-						{
-								return module.at(j)->getNode()->GetDevice(i);
-						}
+					if(n2->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
+					{
+							return n2->GetDevice(i);
+					}
+			}
 
-						if(module.at(j)->getNode()->GetDevice(i)->GetChannel()->GetDevice(1)->GetNode()==n1)
-						{
-								return module.at(j)->getNode()->GetDevice(i);
-						}
-				}
-
-				return 0;
+			return 0;
 		}
 }

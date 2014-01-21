@@ -30,7 +30,7 @@ class CCN_Name;
 class BootstrappingHelper : public Object
 {
 	public:
-	Ptr<UniformRandomVariable> r;
+	//Ptr<UniformRandomVariable> r;
 	//int pitEntryForExp;
 
 	//Ptr<Text> text;
@@ -38,7 +38,7 @@ class BootstrappingHelper : public Object
 	vector < Ptr < CcnModule > > * module;
 	Ptr<CCN_Name> name2;
 	Ptr<Initializer> i;
-	Ptr<NetDevice> ndfinder(Ptr<Node> n1,Ptr<Node> n2,uint32_t,uint32_t);
+	Ptr<NetDevice> ndfinder(Ptr<Node> n1,Ptr<Node> n2);
 	vector< Ptr < Object > >* vec3;
 //	Ptr<Receivers> rec3;
 	vector <vertex> select(vector <vertex>,unsigned gs);
@@ -57,11 +57,13 @@ class BootstrappingHelper : public Object
 
 
 
-	BootstrappingHelper(unsigned int s,std::string filename,int gsize,int length,int d,int switchh);
+	BootstrappingHelper(std::string filename,int gsize,int length,int d,int switchh,Ptr<UniformRandomVariable>);
 	~BootstrappingHelper();
 	void parseTopology();
 
 	void startExperiment();
+	map <uint32_t , uint32_t> nodeToModule;
+	Ptr<UniformRandomVariable> urv;
 };
 }
 

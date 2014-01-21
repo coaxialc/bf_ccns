@@ -28,8 +28,7 @@ class CcnModule;
 class ResultPrinter: public ns3::Object {
 
 public:
-	ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs, uint32_t exp,
-			Ptr<Sender> s,vector < Ptr < Receiver > > receiver);
+	ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs, uint32_t exp, Ptr<Sender> s,vector < Ptr < Receiver > > receiver);
 	~ResultPrinter();
 	virtual void DoDispose(void);
 

@@ -59,6 +59,11 @@ bool Bloomfilter::setBit(uint32_t bitPosition){
 }
 
 void Bloomfilter::OR(Ptr<Bloomfilter> bf){
+	if(this==0)
+	{
+		std::cout<<"this is null"<<std::endl;
+	}
+
 	for (uint32_t i=0; i<length; i++){
 		filter[i] = filter[i] | bf->getBuffer()[i];
 	}

@@ -21,8 +21,9 @@ uint32_t CcnModule::RX_DATA = 0;
 
 Time CcnModule::ONE_NS = NanoSeconds(1);
 
-CcnModule::CcnModule(Ptr<Node> node, int switchh) {
+CcnModule::CcnModule(Ptr<Node> node, int switchh,Ptr<UniformRandomVariable> urv) {
 	nodePtr = node;
+	this->urv=urv;
 	this->switchh = switchh; //if zero ,hop counters start randomly ,otherwise they all start at max ,which is d
 
 	thePIT = CreateObject<PIT>();
@@ -30,7 +31,22 @@ CcnModule::CcnModule(Ptr<Node> node, int switchh) {
 	p_RX_Data = 0;
 	addresses = map<Ptr<NetDevice>, Address>();
 
+	//std::cout<<"this has "<<nodePtr->GetNDevices()<<" devices"<<std::endl;
+
 	for (uint32_t i = 0; i < nodePtr->GetNDevices(); i++) {
+
+		/*if(nodePtr->GetDevice(0)==0)
+		{
+			std::cout<<"i 0 einai null"<<std::endl;
+		}
+
+		if(nodePtr->GetDevice(1)==0)
+		{
+			std::cout<<"i 1 einai null"<<std::endl;
+		}*/
+
+	//	std::cout<<"trying to access device "<<i<<std::endl;
+
 		Ptr<NetDevice> device = nodePtr->GetDevice(i);
 		device->SetReceiveCallback(
 				MakeCallback(&CcnModule::handlePacket, this));
@@ -88,7 +104,14 @@ void CcnModule::sendThroughDevice(Ptr<const Packet> p, Ptr<NetDevice> nd) {
 	uint8_t* b = new uint8_t[p->GetSize()];
 	p->CopyData(b, p->GetSize());
 	Ptr<Packet> p2 = Create<Packet>(b, p->GetSize());
+
+	if(nd==0)
+	{
+		std::cout << "device null" << std::endl;
+	}
+
 	bool sent = nd->Send(p2, addresses[nd], 0x88DD);
+
 	if (!sent) {
 		std::cout << "bytes dropped" << std::endl;
 		std::cout << "packets dropped" << std::endl;
@@ -136,8 +159,15 @@ void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd) {
 	}
 
 	Ptr<TrieNode> tn = this->FIB->longestPrefixMatch(interest->getName());
+
+	if(tn==0)
+	{
+		std::cout<<"null tn"<<std::endl;
+	}
+
 	if (tn->hasLocalApps()) {
 		uint8_t new_ttl = ExperimentGlobals::D - interest->getInitialHopCounter();
+
 		thePIT->addRecord(interest->getName(), interest->getBloomfilter(), new_ttl);
 
 		Ptr<LocalApp> pubisher = tn->getLocalApps()->at(0);
@@ -150,6 +180,7 @@ void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd) {
 
 	if (interest->getHopCounter() == 0) { //must store in PIT
 		uint8_t new_ttl = ExperimentGlobals::D - interest->getInitialHopCounter();
+
 		Ptr<PTuple> ptuple = CreateObject<PTuple>(interest->getBloomfilter(),
 				new_ttl);
 		thePIT->update(interest->getName(), ptuple);
@@ -236,7 +267,7 @@ uint32_t CcnModule::bfForward(Ptr<Bloomfilter> bf, Ptr<CCN_Data> data,
 	return fwded;
 }
 
-void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) {
+void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) { //std::cout << "doSendInterest called" << std::endl;
 	Ptr<PTuple> pt = thePIT->check(name);
 	if (pt != 0) {
 		bool added = pt->addLocalApp(localApp);
@@ -248,6 +279,7 @@ void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) {
 	}
 
 	Ptr<Bloomfilter> bf = CreateObject<Bloomfilter>(Bloomfilters::BF_LENGTH);
+	//std::cout<<"na kai to filtro: "<<bf->toString()<<std::endl;
 	uint32_t initTTL = decideTtl();
 	Ptr<CCN_Interest> interest = CreateObject<CCN_Interest>(name, initTTL,
 			initTTL, bf);
@@ -261,7 +293,9 @@ void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) {
 	}
 
 	pt = CreateObject<PTuple>(bf, 0);
+	//std::cout<<"na kai to filtro: "<<bf->toString()<<std::endl;
 	pt->addLocalApp(localApp);
+	//std::cout<<"na kai to filtro: "<<pt->getBF()->toString()<<std::endl;
 	thePIT->update(name, pt);
 
 	if (fibLookup->hasLocalApps()) {
@@ -270,6 +304,24 @@ void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) {
 	} else if (fibLookup->hasDevices()) {
 		Ptr<NetDevice> netdevice = fibLookup->getDevices()->at(0);
 		Ptr<Packet> p = interest->serializeToPacket();
+
+		/*if(netdevice==0)
+		{
+			std::cout << "device null" << std::endl;
+		}
+
+		for(uint32_t i=0;i<fibLookup->getDevices()->size();i++)
+		{
+			if(fibLookup->getDevices()->at(i)==0)
+			{
+				std::cout << "position: "<<i<<" is null "<< std::endl;
+			}
+			else
+			{
+				std::cout << "position: "<<i<<" is not null "<< std::endl;
+			}
+		}
+*/
 		sendThroughDevice(p, netdevice);
 	} else {
 		stringstream sstr;
@@ -283,8 +335,12 @@ void CcnModule::doSendInterest(Ptr<CCN_Name> name, Ptr<LocalApp> localApp) {
 
 int CcnModule::decideTtl() {
 	if (switchh == 0) { //switchh 0 means using a random value
-		uint32_t d = ExperimentGlobals::RANDOM_VAR->GetInteger(1,
-				ExperimentGlobals::D);
+		/*ExperimentGlobals::RANDOM_VAR->SetAttribute ("Min", DoubleValue (1));
+		ExperimentGlobals::RANDOM_VAR->SetAttribute ("Max", DoubleValue (ExperimentGlobals::D));*/
+		//uint32_t d=ExperimentGlobals::RANDOM_VAR->GetInteger(1,ExperimentGlobals::D);
+
+		uint32_t d=urv->GetInteger(1,ExperimentGlobals::D);
+
 		return d;
 	} else {
 		return ExperimentGlobals::D;
@@ -396,6 +452,15 @@ string CcnModule::stringtobinarystring(std::string s) {
  }*/
 
 bool operator<(const Ptr<NetDevice>& lhs, const Ptr<NetDevice>& rhs) {
+	if(lhs==0)
+	{
+		std::cout<<"first was null"<<std::endl;
+	}
+
+	if(rhs==0)
+	{
+		std::cout<<"second was null"<<std::endl;
+	}
 	return lhs->GetAddress() < rhs->GetAddress();
 }
 

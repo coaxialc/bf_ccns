@@ -8,8 +8,7 @@ using std::ofstream;
 
 using namespace ns3;
 
-ResultPrinter::ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs,
-		uint32_t exp, Ptr<Sender> s,vector < Ptr < Receiver > > receiver) {
+ResultPrinter::ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs,uint32_t exp, Ptr<Sender> s,vector < Ptr < Receiver > > receiver) {
 	this->module = module;
 
 	std::cout << "-----------------Interest and data count-----------------"

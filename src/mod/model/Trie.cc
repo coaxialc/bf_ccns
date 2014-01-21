@@ -52,7 +52,7 @@ Ptr<TrieNode> Trie::longestPrefixMatch(Ptr<CCN_Name> name) {
 	Ptr<TrieNode> lastNodeWithData = 0;
 
 	uint32_t currentPosition = 0;
-	while(currentPosition < name->size()){
+	while(currentPosition < name->size()){//std::cout<<"mpike sto while"<<std::endl;
 		Ptr<PtrString> token = name->getToken(currentPosition);
 		Ptr<TrieNode> child = currentNode->getChild(token);
 		if (child == 0){
@@ -67,6 +67,10 @@ Ptr<TrieNode> Trie::longestPrefixMatch(Ptr<CCN_Name> name) {
 		currentPosition++;
 	}
 
+	if(lastNodeWithData==0)
+	{
+		std::cout<<"null before return"<<std::endl;
+	}
 	return lastNodeWithData;
 }
 }

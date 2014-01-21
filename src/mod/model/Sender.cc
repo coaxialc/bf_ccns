@@ -44,9 +44,9 @@ void Sender::handleData(Ptr<CCN_Name>, uint8_t*, uint32_t){
 	NS_ASSERT_MSG(false, "Sender should not receive any data.");
 }
 
-void Sender::insertData(const pair < Ptr< CCN_Name >,char* > pa)
+void Sender::insertData(Ptr< CCN_Name > name, Ptr<Packet> p)
 {
-	data.insert(pa);
+	data[name] = p;
 }
 
 void Sender::AnnounceName(Ptr<CCN_Name> name) {

@@ -33,8 +33,8 @@ public:
 
 	Ptr<TrieNode> setAndGetChildren(Ptr<PtrString>);
 	Ptr<TrieNode> getChild(Ptr<PtrString>);
-	bool hasDevices(){return devices != 0;}
-	bool hasLocalApps(){ return localApps != 0;}
+	bool hasDevices(){return (devices!=0&&(devices->size()>0)&&devices->at(0)!=0);}
+	bool hasLocalApps(){ return (localApps!=0&&(localApps->size()>0)&&localApps->at(0)!=0);}
 	bool hasData();
 
 	vector<Ptr<LocalApp> >* getLocalApps(){return localApps;}

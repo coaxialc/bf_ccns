@@ -85,12 +85,14 @@ void Receiver::SendInterest(Ptr<CCN_Name> name, uint32_t num) {
 	for (uint32_t i=1; i<=num; i++){
 		Time millis = MilliSeconds(i);
 		stringstream sstream;
-		sstream << num;
+		sstream << i;
 		string numstr = sstream.str();
 
 		vector<string> tokens = name->getTokens();
 		tokens.push_back(numstr);
 		Ptr<CCN_Name> theName = CreateObject<CCN_Name>(tokens);
+
+	//	std::cout<<ccnm->getNode()->GetDevice(0)->GetAddress()<<" asking for: "<<theName->toString()<<std::endl;
 
 		Simulator::Schedule(millis, &Receiver::doSendInterest, this, theName);
 	}

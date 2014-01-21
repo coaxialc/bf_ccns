@@ -3,13 +3,14 @@
 namespace ns3 {
 
 PTuple::PTuple(Ptr<Bloomfilter> bf, int ttlIn){
-	bf = CreateObject<Bloomfilter>(bf->getLength(), bf->getBuffer());
+	this->bf = CreateObject<Bloomfilter>(bf->getLength(), bf->getBuffer());
+
 	ttl = ttlIn;
 	r = vector<Ptr<LocalApp> >();
 }
 
 PTuple::PTuple(Ptr<Bloomfilter> bf, int ttlIn, vector<Ptr<LocalApp> >* apps) {
-	bf = CreateObject<Bloomfilter>(bf->getLength(), bf->getBuffer());
+	this->bf = CreateObject<Bloomfilter>(bf->getLength(), bf->getBuffer());
 	ttl = ttlIn;
 	r = vector<Ptr<LocalApp> >();
 	vector<Ptr<LocalApp> >::iterator iter;
