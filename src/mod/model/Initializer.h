@@ -19,10 +19,11 @@ namespace ns3
 	{
 		public:
 		Initializer(std::vector < Ptr < CcnModule > >* ,Ptr<Parser> ,int ,uint32_t,map <uint32_t , uint32_t>);
-
 		~Initializer();
-
 		void initializeFIBs();
+
+		private:
+		void doesEveryModuleHaveANode();
 		int dataOwner;
 		uint32_t dataNum;
 		Ptr<CcnModule> firstUnvisitedChild(Ptr<CcnModule> );

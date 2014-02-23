@@ -21,9 +21,9 @@ uint32_t CcnModule::RX_DATA = 0;
 
 Time CcnModule::ONE_NS = NanoSeconds(1);
 
-CcnModule::CcnModule(Ptr<Node> node, int switchh,Ptr<UniformRandomVariable> urv) {
+CcnModule::CcnModule(Ptr<Node> node, int switchh) {
 	nodePtr = node;
-	this->urv=urv;
+
 	this->switchh = switchh; //if zero ,hop counters start randomly ,otherwise they all start at max ,which is d
 
 	thePIT = CreateObject<PIT>();
@@ -140,6 +140,10 @@ uint8_t CcnModule::extract_packet_type(Ptr<const Packet> p) {
 }
 
 void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd) {
+
+	//say it when you get an interest
+	std::cout<<"Node "<<this->nodePtr->GetId()<<" just got the interest."<<std::endl;
+
 	Ptr<CCN_Interest> interest = CCN_Interest::deserializeFromPacket(p->Copy());
 
 	interest->decreaseHopCounter();
@@ -192,13 +196,14 @@ void CcnModule::handleIncomingInterest(Ptr<const Packet> p, Ptr<NetDevice> nd) {
 		interest->setBloomfilter(newBF);
 	}
 
-	Ptr<NetDevice> device = tn->getDevices()->at(0);
+	Ptr<NetDevice> device = tn->getDevices()->at(0); std::cout<<"FIB says ,send it through "<<device->GetAddress()<<std::endl;
 	Ptr<Packet> packet = interest->serializeToPacket();
 	sendThroughDevice(packet, device);
 
 }
 
 void CcnModule::handleIncomingData(Ptr<const Packet> p, Ptr<NetDevice> nd) {
+	std::cout<<"Node "<<this->nodePtr->GetId()<<" just got the data."<<std::endl;
 	Ptr<CCN_Data> data = CCN_Data::deserializeFromPacket(p->Copy());
 	data->decreaseHopCounter();
 
@@ -337,9 +342,13 @@ int CcnModule::decideTtl() {
 	if (switchh == 0) { //switchh 0 means using a random value
 		/*ExperimentGlobals::RANDOM_VAR->SetAttribute ("Min", DoubleValue (1));
 		ExperimentGlobals::RANDOM_VAR->SetAttribute ("Max", DoubleValue (ExperimentGlobals::D));*/
-		//uint32_t d=ExperimentGlobals::RANDOM_VAR->GetInteger(1,ExperimentGlobals::D);
 
-		uint32_t d=urv->GetInteger(1,ExperimentGlobals::D);
+		uint32_t d=ExperimentGlobals::RANDOM_VAR->GetInteger(1,ExperimentGlobals::D);
+		//uint32_t d=urv->GetInteger(1,ExperimentGlobals::D);
+
+		/*urv->SetAttribute ("Min", DoubleValue (1));
+		urv->SetAttribute ("Max", DoubleValue (ExperimentGlobals::D));
+		uint32_t d=urv->GetInteger();*/
 
 		return d;
 	} else {

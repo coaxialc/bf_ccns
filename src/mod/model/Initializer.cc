@@ -32,8 +32,20 @@ class CcnModule;
 			//delete connection;
 		}
 
+		void Initializer::doesEveryModuleHaveANode()
+		{
+			for(uint32_t i=0;i<module.size();i++)
+			{
+				if(module.at(i)->getNode()==0)
+				{
+					std::cout<<"Module "<<i<<" does not have a node."<<std::endl;
+				}
+			}
+		}
+
 		void Initializer::initializeFIBs()
 		{
+		//	std::cout<<"-------------BFS---------------"<<std::endl;
 			unsigned i=this->dataOwner;
 			queue < Ptr < CcnModule > >* q=new queue < Ptr < CcnModule > >();
 			q->push(module.at(i));
@@ -41,15 +53,16 @@ class CcnModule;
 			visited.find(module.at(i))->second=true;
 
 			while(q->size()!=0)
-			{	//std::cout<<"first while"<<std::endl;
+			{
+
 				Ptr<CcnModule> handle=q->front();
 				q->pop();
 
 				Ptr<CcnModule> c=0;
 				while((c=firstUnvisitedChild(handle))!=0)
-				{//std::cout<<"second while"<<std::endl;
+				{
+			//		std::cout<<"Handle: "<<handle->getNode()->GetId()<<" \n First unvisited child: "<<c->getNode()->GetId()<<std::endl;
 					visited.find(c)->second=true;
-
 
 					for(uint32_t k=1;k<=this->dataNum;k++)
 					{
@@ -64,25 +77,25 @@ class CcnModule;
 						nameVector->push_back(sstream.str());
 						Ptr<CCN_Name> name=CreateObject<CCN_Name>(*nameVector);
 
-						if(ndfinder(handle->getNode(),c->getNode())==0)
-						{
-							std::cout<<"XONO NULL STO ALLO"<<std::endl;
-						}
-
+				//		std::cout<<"Initializer - Module "<<c->getNode()->GetId()<<":"<<"To reach name "<<name->toString()<<" go through "<<ndfinder(handle->getNode(),c->getNode())->GetAddress()<<std::endl;
 						c->getFIB()->put(name,ndfinder(handle->getNode(),c->getNode()));
 					}
 					q->push(c);
 				}
 			}
+		//	std::cout<<"-------------BFS---------------"<<std::endl;
 		}
 
 		Ptr<CcnModule> Initializer::firstUnvisitedChild(Ptr<CcnModule> ccn)
 		{
 			for(unsigned i=0;i<ccn->getNode()->GetNDevices();i++)
 			{
-				if(!(this->visited.find(ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second)->second))
+				if(!ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second->getNode()==0)//checking if its a real module (explained in BootstrappingHelper.cc)
 				{
-					return Ptr<CcnModule>(ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second);
+					if(!(this->visited.find(ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second)->second))
+					{
+						return ccn->getNeighborModules().find(ccn->getNode()->GetDevice(i))->second;
+					}
 				}
 			}
 
@@ -92,6 +105,12 @@ class CcnModule;
 
 		Ptr<NetDevice> Initializer::ndfinder(Ptr<Node> n1,Ptr<Node> n2)//epistrefei to net device tou deksiou me to opoio o deksis syndeetai ston aristero
 		{
+		//	std::cout<<"ndfinder: "<<n1->GetId()<<" "<<n2->GetId()<<std::endl;
+
+			if(n1==0) {std::cout<<"In ndfinder in initializer n1 is null"<<std::endl;}
+
+			if(n2==0) {std::cout<<"In ndfinder in initializer n2 is null"<<std::endl;}
+
 			for(unsigned i=0;i<n2->GetNDevices();i++)
 			{
 					if(n2->GetDevice(i)->GetChannel()->GetDevice(0)->GetNode()==n1)

@@ -14,7 +14,7 @@ namespace ns3 {
 
 class ExperimentGlobals{
 public:
-	static UniformRandomVariable *RANDOM_VAR;
+	static Ptr<UniformRandomVariable> RANDOM_VAR;
 	static uint32_t D;
 };
 

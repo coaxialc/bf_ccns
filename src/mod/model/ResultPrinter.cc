@@ -37,7 +37,7 @@ ResultPrinter::ResultPrinter(vector<Ptr<CcnModule> >& module, uint32_t gs,uint32
 		file.close();
 	}
 
-	for (uint32_t i = 0; i < module.size(); i++) {
+	for (uint32_t i = 0; i < receiver.size(); i++) {
 
 			//std::cout<<"receiver found"<<std::endl;
 			if (receiver.at(i)->getReturned() != receiver.at(i)->getAskedFor()) {

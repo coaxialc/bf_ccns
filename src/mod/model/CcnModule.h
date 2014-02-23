@@ -32,7 +32,7 @@ public:
 	static uint32_t RX_INTERESTS;
 	static uint32_t RX_DATA;
 
-	CcnModule(Ptr<Node>, int switchh,Ptr<UniformRandomVariable> );
+	CcnModule(Ptr<Node>, int switchh );
 	~CcnModule();
 	virtual void DoDispose(void);
 
@@ -65,7 +65,7 @@ public:
 	friend bool operator< (const Ptr<NetDevice>&, const Ptr<NetDevice>&);
 
 private:
-	Ptr<UniformRandomVariable> urv;
+
 	uint32_t p_RX_Data;
 	uint32_t switchh;
 

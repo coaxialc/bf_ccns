@@ -57,13 +57,13 @@ class BootstrappingHelper : public Object
 
 
 
-	BootstrappingHelper(std::string filename,int gsize,int length,int d,int switchh,Ptr<UniformRandomVariable>);
+	BootstrappingHelper(std::string filename,int gsize,int length,int d,int switchh);
 	~BootstrappingHelper();
 	void parseTopology();
 
 	void startExperiment();
 	map <uint32_t , uint32_t> nodeToModule;
-	Ptr<UniformRandomVariable> urv;
+
 };
 }
 

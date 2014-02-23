@@ -41,9 +41,10 @@ def build(bld):
     headers = bld(features='ns3header')
     headers.module = 'mod'
     headers.source = [
-        #'model/mod.h',
-        #'helper/mod-helper.h',
-        'model/Bloomfilter.h',        
+    #'model/mod.h',
+    #'helper/mod-helper.h',
+    'model/utils.h',
+    'model/Bloomfilter.h',        
 	'model/ccn-packets.h',
 	'model/CcnModule.h',
 	'model/CCN_Name.h',		

@@ -1,4 +1,5 @@
 #include "CCN_Name.h"
+#include "utils.h"
 #include <sstream>
 #include <iostream>
 
@@ -93,15 +94,6 @@ uint32_t CCN_Name::serializeToBuffer(uint8_t *buffer) const {
 	return sizeof(uint16_t) + length*sizeof(char);
 }
 
-vector<string> & split(const string &s, char delim, vector<string> &elems) {
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim)) {
-    	elems.push_back(item);
-
-    }
-    return elems;
-}
 
 pair<Ptr<CCN_Name>, uint32_t> CCN_Name::deserializeFromBuffer(uint8_t *buffer){
 
@@ -119,7 +111,7 @@ pair<Ptr<CCN_Name>, uint32_t> CCN_Name::deserializeFromBuffer(uint8_t *buffer){
 	free(str_buff);
 
 	vector<string> elems;
-	split(str, '/', elems);
+	Utils::split(str, '/', elems);
 	Ptr<CCN_Name> name = CreateObject<CCN_Name>(elems);
 	uint32_t readBytes = sizeof(uint16_t) + sizeof(char)*length;
 

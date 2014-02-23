@@ -22,6 +22,7 @@ using std::string;
 
 typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS> graph;
 typedef boost::graph_traits<graph>::vertex_descriptor vertex;
+typedef boost::graph_traits<graph>::edge_descriptor edge;
 
 namespace  ns3 {
 
